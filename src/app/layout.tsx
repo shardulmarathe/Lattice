@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { getSiteUrl, siteConfig } from "@/lib/site";
+import { getOgImageUrl, getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,13 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = getSiteUrl();
+const ogImageUrl = getOgImageUrl();
 
 export const metadata: Metadata = {
   title: siteConfig.title,
   description: siteConfig.description,
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: siteConfig.title,
+    title: siteConfig.name,
     description: siteConfig.description,
     url: siteUrl,
     siteName: siteConfig.name,
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Lattice — A laser reflection puzzle game.",
@@ -39,9 +40,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: siteConfig.title,
+    title: siteConfig.name,
     description: siteConfig.description,
-    images: ["/og-image.png"],
+    images: [ogImageUrl],
   },
 };
 
