@@ -1,0 +1,124 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type {
+  BoardCell,
+  LaserResult,
+  Puzzle,
+} from "@/lib/puzzleTypes";
+import FlagTile from "./FlagTile";
+import NumberTile from "./NumberTile";
+import SourceTile from "./SourceTile";
+import LaserPath from "../Laser/LaserPath";
+import MirrorTile from "../Mirror/MirrorTile";
+
+interface BoardProps {
+  puzzle: Puzzle;
+  board: BoardCell[][];
+  laserResult: LaserResult;
+  collectedNumbers: Set<number>;
+  onCellClick: (x: number, y: number) => void;
+  disabled?: boolean;
+}
+
+export default function Board({
+  puzzle,
+  board,
+  laserResult,
+  collectedNumbers,
+  onCellClick,
+  disabled = false,
+}: BoardProps) {
+  const [cellSize, setCellSize] = useState(56);
+
+  useEffect(() => {
+    const updateSize = () => {
+      const maxBoardWidth = Math.min(window.innerWidth - 48, 640);
+      const size = Math.floor(maxBoardWidth / puzzle.gridSize);
+      const clamped = Math.max(40, Math.min(72, size));
+      setCellSize(clamped);
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, [puzzle.gridSize]);
+
+  const boardSize = puzzle.gridSize * cellSize;
+
+  const isNumberCollected = (value: number) => collectedNumbers.has(value);
+
+  const handleCellClick = (cell: BoardCell, x: number, y: number) => {
+    if (disabled) return;
+    if (cell.type === "empty" || cell.type === "mirror") {
+      onCellClick(x, y);
+    }
+  };
+
+  return (
+    <div
+      className="relative border border-[#222222]"
+      style={{ width: boardSize, height: boardSize }}
+    >
+      <div
+        className="absolute inset-0 grid"
+        style={{
+          gridTemplateColumns: `repeat(${puzzle.gridSize}, 1fr)`,
+          gridTemplateRows: `repeat(${puzzle.gridSize}, 1fr)`,
+        }}
+      >
+        {board.map((row, y) =>
+          row.map((cell, x) => {
+            const isInteractive =
+              !disabled && (cell.type === "empty" || cell.type === "mirror");
+
+            return (
+              <div
+                key={`${x}-${y}`}
+                className={`relative border border-[#222222] ${
+                  isInteractive ? "cursor-pointer hover:bg-white/[0.03]" : ""
+                }`}
+                style={{ width: cellSize, height: cellSize }}
+                onClick={() => handleCellClick(cell, x, y)}
+              >
+                {cell.type === "obstacle" && (
+                  <div className="h-full w-full bg-white" />
+                )}
+
+                {cell.type === "source" && cell.sourceDirection && (
+                  <SourceTile
+                    direction={cell.sourceDirection}
+                    size={cellSize}
+                  />
+                )}
+
+                {cell.type === "flag" && <FlagTile size={cellSize} />}
+
+                {cell.type === "number" && cell.number !== undefined && (
+                  <NumberTile
+                    value={cell.number}
+                    size={cellSize}
+                    isCollected={isNumberCollected(cell.number)}
+                  />
+                )}
+
+                {cell.type === "mirror" && cell.mirror && (
+                  <MirrorTile
+                    orientation={cell.mirror}
+                    size={cellSize}
+                  />
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <LaserPath
+        segments={laserResult.segments}
+        gridSize={puzzle.gridSize}
+        cellSize={cellSize}
+      />
+    </div>
+  );
+}
