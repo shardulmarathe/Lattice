@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,9 +14,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: "LATTICE",
-  description: "A daily mirror puzzle game. Route the laser through numbered tiles.",
+  title: siteConfig.title,
+  description: siteConfig.description,
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: siteConfig.title,
+    description: siteConfig.description,
+    url: siteUrl,
+    siteName: siteConfig.name,
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Lattice — A laser reflection puzzle game.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: ["/twitter-image"],
+  },
 };
 
 export default function RootLayout({
