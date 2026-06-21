@@ -7,7 +7,7 @@ import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
 
 const buttonClass =
-  "relative z-20 w-48 border border-white/20 bg-black px-8 py-4 text-sm tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white";
+  "relative z-20 w-48 border border-white/20 bg-black px-8 py-4 text-center text-sm tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
 
 export default function HomeScreen() {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -19,7 +19,7 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black px-6">
+    <main className="relative grid min-h-screen w-full place-items-center bg-black px-6">
       <CursorLaserTrail suppressTrail={isOverButtons} />
 
       <motion.div
@@ -29,7 +29,7 @@ export default function HomeScreen() {
         className="relative z-10 flex flex-col items-center gap-12"
       >
         <motion.h1
-          className="text-6xl font-light tracking-[0.4em] text-white md:text-8xl"
+          className="text-6xl font-light tracking-[0.4em] text-white -mr-[0.4em] md:text-8xl"
           initial={false}
           animate={mounted ? { opacity: 1 } : false}
           transition={{ duration: 1.2, ease: "easeOut" }}
