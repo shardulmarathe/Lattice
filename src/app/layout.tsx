@@ -29,10 +29,11 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Lattice — A laser reflection puzzle game.",
+        type: "image/png",
       },
     ],
   },
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
-    images: ["/twitter-image"],
+    images: ["/og-image.png"],
   },
 };
 
