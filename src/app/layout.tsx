@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { getOgImageUrl, getSiteUrl, siteConfig } from "@/lib/site";
+import { getOgImageUrl, getSiteUrl, ogImageDimensions, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: ogImageUrl,
-        width: 1200,
-        height: 630,
+        width: ogImageDimensions.width,
+        height: ogImageDimensions.height,
         alt: "Lattice — A laser reflection puzzle game.",
         type: "image/png",
       },

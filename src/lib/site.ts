@@ -23,5 +23,10 @@ export function getSiteUrl(): string {
 }
 
 export function getOgImageUrl(): string {
-  return `${getSiteUrl()}/og-image.png`;
+  return `${getSiteUrl()}/Lattice%20Home%20Image.png`;
 }
+
+export const ogImageDimensions = {
+  width: 3456,
+  height: 2234,
+};
