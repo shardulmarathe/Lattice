@@ -1,11 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
 const GameScreen = dynamic(() => import("@/components/GameScreen"), {
   ssr: false,
 });
 
 export default function PlayPage() {
-  return <GameScreen />;
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-black" />}>
+      <GameScreen />
+    </Suspense>
+  );
 }

@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PUZZLE_001 } from "@/data/puzzles";
+import { useSearchParams } from "next/navigation";
+import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
 import {
   buildBoard,
   calculateLaserPath,
@@ -16,7 +17,7 @@ import {
   saveGameState,
   type SavedGameState,
 } from "@/lib/gameStorage";
-import type { MirrorPlacement } from "@/lib/puzzleTypes";
+import type { MirrorPlacement, Puzzle } from "@/lib/puzzleTypes";
 import { validateSequence, formatTime } from "@/lib/validation";
 import Board from "@/components/Board/Board";
 import Header from "@/components/Header/Header";
@@ -28,13 +29,34 @@ const CompletionModal = dynamic(
   { ssr: false }
 );
 
-function readSavedState(puzzleId: number): SavedGameState {
+function readSavedState(puzzleId: number, devReplay: boolean): SavedGameState {
+  // Vetting only: /play?puzzle=N&replay=1 in development starts fresh. Never in production.
+  if (devReplay) {
+    return createDefaultGameState(puzzleId);
+  }
+
   return loadGameState(puzzleId) ?? createDefaultGameState(puzzleId);
 }
 
+function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
+  if (process.env.NODE_ENV === "development") {
+    const puzzleParam = searchParams.get("puzzle");
+    if (puzzleParam !== null) {
+      const id = Number(puzzleParam);
+      return getPuzzleById(id) ?? PUZZLE_001;
+    }
+  }
+
+  return getPuzzleForDate(new Date()) ?? PUZZLE_001;
+}
+
 export default function GameScreen() {
-  const puzzle = PUZZLE_001;
-  const [saved] = useState(() => readSavedState(puzzle.id));
+  const searchParams = useSearchParams();
+  const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
+  const devReplay =
+    process.env.NODE_ENV === "development" &&
+    searchParams.get("replay") === "1";
+  const [saved] = useState(() => readSavedState(puzzle.id, devReplay));
 
   const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
   const [isPaused, setIsPaused] = useState(saved.isPaused);

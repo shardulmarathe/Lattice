@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LaserBoxTrace from "./LaserBoxTrace";
 
-const MIN_TRACE_MS = 300;
-const NAVIGATE_AT_PROGRESS = 0.99;
-/** Frontend-only: stretches the laser lap so the trace feels less abrupt. */
-const LAP_VISUAL_SLOWDOWN = 1.28;
+/** Frontend-owned minimum time for one full perimeter lap (ms). */
+const MIN_FULL_LAP_MS = 400;
+/** Frontend-only: ~30% slower laser trace around the button. */
+const LAP_VISUAL_SLOWDOWN = 1.3;
 const LOADING_CREEP_DURATION_MS = 2400;
 const LOADING_PHASE_CAP = 0.75;
 const PROGRESS_SMOOTHING = 5;
@@ -25,8 +25,9 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - clamped) ** 3;
 }
 
+/** Total frontend lap duration — independent of how fast the backend resolves. */
 function getLapDuration(loadCompleteTime: number): number {
-  return Math.max(MIN_TRACE_MS, loadCompleteTime) * LAP_VISUAL_SLOWDOWN;
+  return Math.max(MIN_FULL_LAP_MS, loadCompleteTime) * LAP_VISUAL_SLOWDOWN;
 }
 
 function getLoadingTarget(elapsed: number): number {
@@ -95,7 +96,6 @@ export default function PlayButton() {
   const [boxSize, setBoxSize] = useState({ width: 192, height: 52 });
   const loadCompleteTimeRef = useRef<number | null>(null);
   const progressAtLoadRef = useRef(0);
-  const hasNavigatedRef = useRef(false);
   const displayProgressRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
   const rafRef = useRef<number>(0);
@@ -110,17 +110,6 @@ export default function PlayButton() {
     preloadGameScreen();
   }, [router]);
 
-  const maybeNavigate = useCallback(() => {
-    if (hasNavigatedRef.current || loadCompleteTimeRef.current === null) {
-      return;
-    }
-
-    if (displayProgressRef.current >= NAVIGATE_AT_PROGRESS) {
-      hasNavigatedRef.current = true;
-      router.push("/play");
-    }
-  }, [router]);
-
   const handlePlay = useCallback(async () => {
     if (isNavigating) return;
 
@@ -132,7 +121,6 @@ export default function PlayButton() {
     const startTime = performance.now();
     loadCompleteTimeRef.current = null;
     progressAtLoadRef.current = 0;
-    hasNavigatedRef.current = false;
     displayProgressRef.current = 0;
     lastFrameTimeRef.current = 0;
     setTraceProgress(0);
@@ -160,33 +148,28 @@ export default function PlayButton() {
       displayProgressRef.current = smoothed;
       setTraceProgress(smoothed);
 
-      if (loadCompleteTimeRef.current !== null) {
-        maybeNavigate();
-      }
-
       rafRef.current = requestAnimationFrame(animate);
     };
 
     rafRef.current = requestAnimationFrame(animate);
 
+    const loadPromise = preloadGameScreen();
+
     try {
-      await preloadGameScreen();
+      await loadPromise;
       loadCompleteTimeRef.current = performance.now() - startTime;
       progressAtLoadRef.current = displayProgressRef.current;
-      maybeNavigate();
+
+      // Backend may be ready early; frontend keeps tracing until the lap finishes.
       await waitForLaserLap(startTime, () => loadCompleteTimeRef.current);
+
       displayProgressRef.current = 1;
       setTraceProgress(1);
-      maybeNavigate();
-
-      if (!hasNavigatedRef.current) {
-        hasNavigatedRef.current = true;
-        router.push("/play");
-      }
+      router.push("/play");
     } finally {
       cancelAnimationFrame(rafRef.current);
     }
-  }, [isNavigating, maybeNavigate, router]);
+  }, [isNavigating, router]);
 
   return (
     <div className="relative inline-block">
