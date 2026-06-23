@@ -1,22 +1,26 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
+import PlayButton from "./PlayButton";
 
 const buttonClass =
   "relative z-20 w-48 border border-white/20 bg-black px-8 py-4 text-center text-sm tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isOverButtons, setIsOverButtons] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    router.prefetch("/play");
+    import("@/components/GameScreen");
+  }, [router]);
 
   return (
     <main className="relative grid min-h-screen w-full place-items-center bg-black px-6">
@@ -42,15 +46,7 @@ export default function HomeScreen() {
           onMouseEnter={() => setIsOverButtons(true)}
           onMouseLeave={() => setIsOverButtons(false)}
         >
-          <Link href="/play" className="relative z-20">
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
-              whileTap={{ scale: 0.98 }}
-              className={buttonClass}
-            >
-              PLAY
-            </motion.button>
-          </Link>
+          <PlayButton />
 
           <motion.button
             whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PUZZLE_001 } from "@/data/puzzles";
 import {
@@ -18,42 +19,38 @@ import {
 import type { MirrorPlacement } from "@/lib/puzzleTypes";
 import { validateSequence, formatTime } from "@/lib/validation";
 import Board from "@/components/Board/Board";
-import CompletionModal from "@/components/CompletionModal/CompletionModal";
 import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
 import { useTimer } from "@/hooks/useTimer";
 
+const CompletionModal = dynamic(
+  () => import("@/components/CompletionModal/CompletionModal"),
+  { ssr: false }
+);
+
+function readSavedState(puzzleId: number): SavedGameState {
+  return loadGameState(puzzleId) ?? createDefaultGameState(puzzleId);
+}
+
 export default function GameScreen() {
   const puzzle = PUZZLE_001;
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [mirrors, setMirrors] = useState<MirrorPlacement[]>([]);
-  const [isPaused, setIsPaused] = useState(false);
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [isViewingSolve, setIsViewingSolve] = useState(false);
-  const [savedComplete, setSavedComplete] = useState(false);
-  const [initialSeconds, setInitialSeconds] = useState(0);
-  const [completionSeconds, setCompletionSeconds] = useState<number | null>(null);
+  const [saved] = useState(() => readSavedState(puzzle.id));
 
-  useEffect(() => {
-    const saved = loadGameState(puzzle.id) ?? createDefaultGameState(puzzle.id);
+  const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
+  const [isPaused, setIsPaused] = useState(saved.isPaused);
+  const [showCompletionModal, setShowCompletionModal] = useState(
+    saved.isComplete && !saved.isViewingSolve
+  );
+  const [isViewingSolve, setIsViewingSolve] = useState(saved.isViewingSolve);
+  const [savedComplete, setSavedComplete] = useState(saved.isComplete);
+  const [completionSeconds, setCompletionSeconds] = useState<number | null>(
+    saved.completionSeconds
+  );
 
-    setMirrors(saved.mirrors);
-    setIsPaused(saved.isPaused);
-    setSavedComplete(saved.isComplete);
-    setIsViewingSolve(saved.isViewingSolve);
-    setInitialSeconds(
-      saved.isComplete && saved.completionSeconds !== null
-        ? saved.completionSeconds
-        : saved.elapsedSeconds
-    );
-    setCompletionSeconds(saved.completionSeconds);
-
-    if (saved.isComplete && !saved.isViewingSolve) {
-      setShowCompletionModal(true);
-    }
-
-    setIsLoaded(true);
-  }, [puzzle.id]);
+  const initialSeconds =
+    saved.isComplete && saved.completionSeconds !== null
+      ? saved.completionSeconds
+      : saved.elapsedSeconds;
 
   const laserResult = useMemo(
     () => calculateLaserPath(puzzle, mirrors),
@@ -71,13 +68,11 @@ export default function GameScreen() {
     isPaused,
     isComplete,
     initialSeconds,
-    enabled: isLoaded,
+    enabled: true,
   });
 
   const persistState = useCallback(
     (overrides: Partial<SavedGameState> = {}) => {
-      if (!isLoaded) return;
-
       const state: SavedGameState = {
         puzzleId: puzzle.id,
         mirrors: overrides.mirrors ?? mirrors,
@@ -94,7 +89,6 @@ export default function GameScreen() {
       saveGameState(state);
     },
     [
-      isLoaded,
       puzzle.id,
       mirrors,
       seconds,
@@ -106,12 +100,11 @@ export default function GameScreen() {
   );
 
   useEffect(() => {
-    if (!isLoaded) return;
     persistState();
-  }, [isLoaded, mirrors, seconds, isPaused, isViewingSolve, isComplete, persistState]);
+  }, [mirrors, seconds, isPaused, isViewingSolve, isComplete, persistState]);
 
   useEffect(() => {
-    if (!isLoaded || !validation.isComplete || savedComplete) return;
+    if (!validation.isComplete || savedComplete) return;
 
     setSavedComplete(true);
     setCompletionSeconds(seconds);
@@ -129,7 +122,6 @@ export default function GameScreen() {
   }, [
     validation.isComplete,
     savedComplete,
-    isLoaded,
     seconds,
     puzzle.id,
     mirrors,
@@ -203,10 +195,6 @@ export default function GameScreen() {
     isComplete && completionSeconds !== null ? completionSeconds : seconds;
 
   const displayTime = formatTime(displaySeconds);
-
-  if (!isLoaded) {
-    return <main className="min-h-screen bg-black" />;
-  }
 
   return (
     <main className="flex min-h-screen flex-col bg-black">

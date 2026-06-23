@@ -21,6 +21,14 @@ interface BoardProps {
   disabled?: boolean;
 }
 
+function computeCellSize(gridSize: number): number {
+  if (typeof window === "undefined") return 56;
+
+  const maxBoardWidth = Math.min(window.innerWidth - 48, 640);
+  const size = Math.floor(maxBoardWidth / gridSize);
+  return Math.max(40, Math.min(72, size));
+}
+
 export default function Board({
   puzzle,
   board,
@@ -29,17 +37,13 @@ export default function Board({
   onCellClick,
   disabled = false,
 }: BoardProps) {
-  const [cellSize, setCellSize] = useState(56);
+  const [cellSize, setCellSize] = useState(() => computeCellSize(puzzle.gridSize));
 
   useEffect(() => {
     const updateSize = () => {
-      const maxBoardWidth = Math.min(window.innerWidth - 48, 640);
-      const size = Math.floor(maxBoardWidth / puzzle.gridSize);
-      const clamped = Math.max(40, Math.min(72, size));
-      setCellSize(clamped);
+      setCellSize(computeCellSize(puzzle.gridSize));
     };
 
-    updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
   }, [puzzle.gridSize]);

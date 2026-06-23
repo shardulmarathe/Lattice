@@ -33,6 +33,7 @@ export default function LaserPath({
   cellSize,
 }: LaserPathProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
+  const [particlesEnabled, setParticlesEnabled] = useState(false);
   const phaseRef = useRef(0);
   const rafRef = useRef<number>(0);
 
@@ -43,7 +44,12 @@ export default function LaserPath({
   );
 
   useEffect(() => {
-    if (path.totalLength === 0) {
+    const id = requestAnimationFrame(() => setParticlesEnabled(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    if (!particlesEnabled || path.totalLength === 0) {
       setParticles([]);
       return;
     }
@@ -72,7 +78,7 @@ export default function LaserPath({
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [path]);
+  }, [path, particlesEnabled]);
 
   if (segments.length === 0) return null;
 
