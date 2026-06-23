@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { LaserSegment } from "@/lib/puzzleTypes";
+import type { LaserSegment, Position } from "@/lib/puzzleTypes";
 import {
   buildContinuousPath,
+  buildVictoryLinearPath,
+  FLAG_ORBIT_RADIUS_RATIO,
+  getFlagVisualCenter,
   getPointOnPath,
   toPixel,
 } from "@/lib/laserPathUtils";
@@ -12,6 +15,9 @@ interface LaserPathProps {
   segments: LaserSegment[];
   gridSize: number;
   cellSize: number;
+  /** When true, beam stops at flag orbit; path particles still flow along the solution. */
+  victoryMode?: boolean;
+  flagPosition?: Position;
 }
 
 const PARTICLE_COUNT = 7;
@@ -31,6 +37,8 @@ export default function LaserPath({
   segments,
   gridSize,
   cellSize,
+  victoryMode = false,
+  flagPosition,
 }: LaserPathProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [particlesEnabled, setParticlesEnabled] = useState(false);
@@ -38,10 +46,12 @@ export default function LaserPath({
   const rafRef = useRef<number>(0);
 
   const boardSize = gridSize * cellSize;
-  const path = useMemo(
-    () => buildContinuousPath(segments, cellSize),
-    [segments, cellSize]
-  );
+  const path = useMemo(() => {
+    if (victoryMode && flagPosition) {
+      return buildVictoryLinearPath(segments, cellSize, flagPosition);
+    }
+    return buildContinuousPath(segments, cellSize);
+  }, [segments, cellSize, victoryMode, flagPosition]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setParticlesEnabled(true));
@@ -80,6 +90,37 @@ export default function LaserPath({
     return () => cancelAnimationFrame(rafRef.current);
   }, [path, particlesEnabled]);
 
+  const orbitRadius = cellSize * FLAG_ORBIT_RADIUS_RATIO;
+
+  const getSegmentPixels = (seg: LaserSegment, index: number) => {
+    let from = toPixel(seg.from.x, seg.from.y, cellSize);
+    let to = toPixel(seg.to.x, seg.to.y, cellSize);
+
+    const isLast = index === segments.length - 1;
+    if (
+      victoryMode &&
+      flagPosition &&
+      isLast &&
+      seg.to.x === flagPosition.x &&
+      seg.to.y === flagPosition.y
+    ) {
+      const flagCenter = getFlagVisualCenter(
+        flagPosition.x,
+        flagPosition.y,
+        cellSize
+      );
+      const dx = flagCenter.x - from.x;
+      const dy = flagCenter.y - from.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      to = {
+        x: flagCenter.x - (dx / mag) * orbitRadius,
+        y: flagCenter.y - (dy / mag) * orbitRadius,
+      };
+    }
+
+    return { from, to };
+  };
+
   if (segments.length === 0) return null;
 
   return (
@@ -100,8 +141,7 @@ export default function LaserPath({
       </defs>
 
       {segments.map((seg, i) => {
-        const from = toPixel(seg.from.x, seg.from.y, cellSize);
-        const to = toPixel(seg.to.x, seg.to.y, cellSize);
+        const { from, to } = getSegmentPixels(seg, i);
         const key = `${seg.from.x}-${seg.from.y}-${seg.to.x}-${seg.to.y}-${i}`;
 
         return (

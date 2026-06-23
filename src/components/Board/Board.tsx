@@ -10,6 +10,7 @@ import FlagTile from "./FlagTile";
 import NumberTile from "./NumberTile";
 import SourceTile from "./SourceTile";
 import LaserPath from "../Laser/LaserPath";
+import FlagVictoryLaser from "../Laser/FlagVictoryLaser";
 import MirrorTile from "../Mirror/MirrorTile";
 
 interface BoardProps {
@@ -19,6 +20,7 @@ interface BoardProps {
   collectedNumbers: Set<number>;
   onCellClick: (x: number, y: number) => void;
   disabled?: boolean;
+  showVictoryLaser?: boolean;
 }
 
 function computeCellSize(gridSize: number): number {
@@ -36,6 +38,7 @@ export default function Board({
   collectedNumbers,
   onCellClick,
   disabled = false,
+  showVictoryLaser = false,
 }: BoardProps) {
   const [cellSize, setCellSize] = useState(() => computeCellSize(puzzle.gridSize));
 
@@ -122,7 +125,18 @@ export default function Board({
         segments={laserResult.segments}
         gridSize={puzzle.gridSize}
         cellSize={cellSize}
+        victoryMode={showVictoryLaser}
+        flagPosition={puzzle.flag}
       />
+
+      {showVictoryLaser && laserResult.reachedFlag && (
+        <FlagVictoryLaser
+          flagX={puzzle.flag.x}
+          flagY={puzzle.flag.y}
+          cellSize={cellSize}
+          boardSize={boardSize}
+        />
+      )}
     </div>
   );
 }

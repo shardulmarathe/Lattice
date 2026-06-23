@@ -29,6 +29,8 @@ const CompletionModal = dynamic(
   { ssr: false }
 );
 
+const COMPLETION_MODAL_DELAY_MS = 350;
+
 function readSavedState(puzzleId: number, devReplay: boolean): SavedGameState {
   // Vetting only: /play?puzzle=N&replay=1 in development starts fresh. Never in production.
   if (devReplay) {
@@ -130,7 +132,6 @@ export default function GameScreen() {
 
     setSavedComplete(true);
     setCompletionSeconds(seconds);
-    setShowCompletionModal(true);
 
     saveGameState({
       puzzleId: puzzle.id,
@@ -149,6 +150,16 @@ export default function GameScreen() {
     mirrors,
     isPaused,
   ]);
+
+  useEffect(() => {
+    if (!savedComplete || showCompletionModal || isViewingSolve) return;
+
+    const modalTimer = window.setTimeout(() => {
+      setShowCompletionModal(true);
+    }, COMPLETION_MODAL_DELAY_MS);
+
+    return () => window.clearTimeout(modalTimer);
+  }, [savedComplete, showCompletionModal, isViewingSolve]);
 
   const board = useMemo(
     () => buildBoard(puzzle, mirrors),
@@ -211,6 +222,9 @@ export default function GameScreen() {
     setIsPaused((p) => !p);
   }, []);
 
+  const showVictoryLaser =
+    validation.isComplete && laserResult.reachedFlag;
+
   const interactionsDisabled = isPaused || isComplete;
 
   const displaySeconds =
@@ -245,6 +259,7 @@ export default function GameScreen() {
           collectedNumbers={collectedSet}
           onCellClick={handleCellClick}
           disabled={interactionsDisabled}
+          showVictoryLaser={showVictoryLaser}
         />
 
         <p className="mt-6 text-center text-sm tracking-wider text-white/70">
