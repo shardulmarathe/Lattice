@@ -35,9 +35,13 @@ export default function FlagVictoryLaser({
   const rafRef = useRef<number>(0);
 
   const center = getFlagVisualCenter(flagX, flagY, cellSize);
+  const centerX = center.x;
+  const centerY = center.y;
   const radius = cellSize * FLAG_ORBIT_RADIUS_RATIO;
 
   useEffect(() => {
+    const orbitCenter = { x: centerX, y: centerY };
+
     const animate = () => {
       phaseRef.current += ORBIT_SPEED;
       const phase = phaseRef.current;
@@ -46,7 +50,7 @@ export default function FlagVictoryLaser({
         { length: ORBIT_PARTICLE_COUNT },
         (_, i) => {
           const t = (phase + i / ORBIT_PARTICLE_COUNT) % 1;
-          const point = getPointOnCircle(center, radius, t);
+          const point = getPointOnCircle(orbitCenter, radius, t);
           const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 + i * 1.2);
           return {
             x: point.x,
@@ -63,7 +67,7 @@ export default function FlagVictoryLaser({
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [center.x, center.y, radius]);
+  }, [centerX, centerY, radius]);
 
   return (
     <svg

@@ -93,7 +93,7 @@ export default function LaserPath({
   const orbitRadius = cellSize * FLAG_ORBIT_RADIUS_RATIO;
 
   const getSegmentPixels = (seg: LaserSegment, index: number) => {
-    let from = toPixel(seg.from.x, seg.from.y, cellSize);
+    const from = toPixel(seg.from.x, seg.from.y, cellSize);
     let to = toPixel(seg.to.x, seg.to.y, cellSize);
 
     const isLast = index === segments.length - 1;
