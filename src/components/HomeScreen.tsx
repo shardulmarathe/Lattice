@@ -56,6 +56,17 @@ export default function HomeScreen() {
           >
             HOW TO PLAY
           </motion.button>
+
+          <motion.a
+            href="https://forms.gle/SwrFyj3ww3GoJc4u7"
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
+            whileTap={{ scale: 0.98 }}
+            className={buttonClass}
+          >
+            FEEDBACK
+          </motion.a>
         </div>
       </motion.div>
 

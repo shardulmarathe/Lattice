@@ -38,7 +38,3 @@ export function formatTime(seconds: number): string {
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
-
-export function getShareText(puzzleId: number, timeSeconds: number): string {
-  return `LATTICE #${puzzleId.toString().padStart(3, "0")}\nSolved in ${formatTime(timeSeconds)}`;
-}

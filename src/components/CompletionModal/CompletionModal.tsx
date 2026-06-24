@@ -2,23 +2,26 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { formatTime, getShareText } from "@/lib/validation";
+import { formatTime } from "@/lib/validation";
+import { getShareText } from "@/lib/shareText";
 
 interface CompletionModalProps {
   puzzleId: number;
   timeSeconds: number;
+  mirrorsUsed: number;
   onSeeSolve: () => void;
 }
 
 export default function CompletionModal({
   puzzleId,
   timeSeconds,
+  mirrorsUsed,
   onSeeSolve,
 }: CompletionModalProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const text = getShareText(puzzleId, timeSeconds);
+    const text = getShareText(puzzleId, timeSeconds, mirrorsUsed);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

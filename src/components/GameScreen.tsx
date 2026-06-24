@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
 import {
   buildBoard,
@@ -53,6 +53,7 @@ function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
 }
 
 export default function GameScreen() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
   const devReplay =
@@ -222,6 +223,10 @@ export default function GameScreen() {
     setIsPaused((p) => !p);
   }, []);
 
+  const handleHome = useCallback(() => {
+    router.push("/");
+  }, [router]);
+
   const showVictoryLaser =
     validation.isComplete && laserResult.reachedFlag;
 
@@ -237,6 +242,7 @@ export default function GameScreen() {
       <Header
         time={displayTime}
         isPaused={isPaused}
+        onHome={handleHome}
         onPause={handlePause}
         onClear={handleClearBoard}
         disabled={isComplete}
@@ -277,6 +283,7 @@ export default function GameScreen() {
         <CompletionModal
           puzzleId={puzzle.id}
           timeSeconds={displaySeconds}
+          mirrorsUsed={mirrors.length}
           onSeeSolve={handleSeeSolve}
         />
       )}
