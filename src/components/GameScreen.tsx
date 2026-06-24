@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
@@ -24,12 +23,7 @@ import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
 import { useTimer } from "@/hooks/useTimer";
 
-const CompletionModal = dynamic(
-  () => import("@/components/CompletionModal/CompletionModal"),
-  { ssr: false }
-);
-
-const COMPLETION_MODAL_DELAY_MS = 350;
+const COMPLETION_NAV_DELAY_MS = 350;
 
 function readSavedState(puzzleId: number, devReplay: boolean): SavedGameState {
   // Vetting only: /play?puzzle=N&replay=1 in development starts fresh. Never in production.
@@ -60,13 +54,13 @@ export default function GameScreen() {
     process.env.NODE_ENV === "development" &&
     searchParams.get("replay") === "1";
   const [saved] = useState(() => readSavedState(puzzle.id, devReplay));
+  const [initialComplete] = useState(
+    () => saved.isComplete && !saved.isViewingSolve
+  );
 
   const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
-  const [showCompletionModal, setShowCompletionModal] = useState(
-    saved.isComplete && !saved.isViewingSolve
-  );
-  const [isViewingSolve, setIsViewingSolve] = useState(saved.isViewingSolve);
+  const isViewingSolve = saved.isViewingSolve;
   const [savedComplete, setSavedComplete] = useState(saved.isComplete);
   const [completionSeconds, setCompletionSeconds] = useState<number | null>(
     saved.completionSeconds
@@ -153,14 +147,19 @@ export default function GameScreen() {
   ]);
 
   useEffect(() => {
-    if (!savedComplete || showCompletionModal || isViewingSolve) return;
+    if (!initialComplete) return;
+    router.replace("/complete");
+  }, [initialComplete, router]);
 
-    const modalTimer = window.setTimeout(() => {
-      setShowCompletionModal(true);
-    }, COMPLETION_MODAL_DELAY_MS);
+  useEffect(() => {
+    if (!savedComplete || isViewingSolve || initialComplete) return;
 
-    return () => window.clearTimeout(modalTimer);
-  }, [savedComplete, showCompletionModal, isViewingSolve]);
+    const navTimer = window.setTimeout(() => {
+      router.push("/complete");
+    }, COMPLETION_NAV_DELAY_MS);
+
+    return () => window.clearTimeout(navTimer);
+  }, [savedComplete, isViewingSolve, initialComplete, router]);
 
   const board = useMemo(
     () => buildBoard(puzzle, mirrors),
@@ -212,12 +211,6 @@ export default function GameScreen() {
     if (isPaused || isComplete) return;
     setMirrors([]);
   }, [isPaused, isComplete]);
-
-  const handleSeeSolve = useCallback(() => {
-    setShowCompletionModal(false);
-    setIsViewingSolve(true);
-    persistState({ isViewingSolve: true });
-  }, [persistState]);
 
   const handlePause = useCallback(() => {
     setIsPaused((p) => !p);
@@ -278,15 +271,6 @@ export default function GameScreen() {
           <WarningBanner message={validation.warningMessage} inline />
         )}
       </div>
-
-      {isComplete && showCompletionModal && (
-        <CompletionModal
-          puzzleId={puzzle.id}
-          timeSeconds={displaySeconds}
-          mirrorsUsed={mirrors.length}
-          onSeeSolve={handleSeeSolve}
-        />
-      )}
     </main>
   );
 }

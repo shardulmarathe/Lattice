@@ -19,7 +19,9 @@ export default function HomeScreen() {
   useEffect(() => {
     setMounted(true);
     router.prefetch("/play");
+    router.prefetch("/complete");
     import("@/components/GameScreen");
+    import("@/components/CompleteScreen");
   }, [router]);
 
   return (

@@ -65,3 +65,8 @@ export function createDefaultGameState(puzzleId: number): SavedGameState {
     isPaused: false,
   };
 }
+
+export function isPuzzleComplete(puzzleId: number): boolean {
+  const saved = loadGameState(puzzleId);
+  return Boolean(saved?.isComplete && saved.completionSeconds !== null);
+}

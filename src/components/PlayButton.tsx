@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
+import { isPuzzleComplete } from "@/lib/gameStorage";
 import LaserBoxTrace from "./LaserBoxTrace";
 
 /** Frontend-owned minimum time for one full perimeter lap (ms). */
@@ -18,6 +20,15 @@ const buttonClass =
 
 function preloadGameScreen() {
   return import("@/components/GameScreen");
+}
+
+function preloadCompleteScreen() {
+  return import("@/components/CompleteScreen");
+}
+
+function getPlayRoute(): "/play" | "/complete" {
+  const puzzle = getPuzzleForDate(new Date()) ?? PUZZLE_001;
+  return isPuzzleComplete(puzzle.id) ? "/complete" : "/play";
 }
 
 function easeOutCubic(t: number): number {
@@ -102,12 +113,19 @@ export default function PlayButton() {
 
   useEffect(() => {
     router.prefetch("/play");
+    router.prefetch("/complete");
     preloadGameScreen();
+    preloadCompleteScreen();
   }, [router]);
 
   const handlePrefetch = useCallback(() => {
-    router.prefetch("/play");
-    preloadGameScreen();
+    const route = getPlayRoute();
+    router.prefetch(route);
+    if (route === "/complete") {
+      preloadCompleteScreen();
+    } else {
+      preloadGameScreen();
+    }
   }, [router]);
 
   const handlePlay = useCallback(async () => {
@@ -153,7 +171,9 @@ export default function PlayButton() {
 
     rafRef.current = requestAnimationFrame(animate);
 
-    const loadPromise = preloadGameScreen();
+    const route = getPlayRoute();
+    const loadPromise =
+      route === "/complete" ? preloadCompleteScreen() : preloadGameScreen();
 
     try {
       await loadPromise;
@@ -165,7 +185,7 @@ export default function PlayButton() {
 
       displayProgressRef.current = 1;
       setTraceProgress(1);
-      router.push("/play");
+      router.push(route);
     } finally {
       cancelAnimationFrame(rafRef.current);
     }
