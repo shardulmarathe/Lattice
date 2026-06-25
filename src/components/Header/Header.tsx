@@ -35,7 +35,7 @@ export default function Header({
           disabled={disabled}
           className={navButtonClass}
         >
-          CLEAR BOARD
+          RESET BOARD
         </button>
       </div>
 

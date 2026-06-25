@@ -48,6 +48,12 @@ function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
   return getPuzzleForDate(new Date()) ?? PUZZLE_001;
 }
 
+function shouldShowTutorialOnLoad(saved: SavedGameState): boolean {
+  if (hasSeenTutorial()) return false;
+  if (saved.isViewingSolve || saved.isComplete) return false;
+  return true;
+}
+
 export default function GameScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,8 +73,12 @@ export default function GameScreen() {
   const [completionSeconds, setCompletionSeconds] = useState<number | null>(
     saved.completionSeconds
   );
-  const [pendingFirstPlay, setPendingFirstPlay] = useState(() => !hasSeenTutorial());
-  const [showHowToPlay, setShowHowToPlay] = useState(() => !hasSeenTutorial());
+  const [pendingFirstPlay, setPendingFirstPlay] = useState(() =>
+    shouldShowTutorialOnLoad(saved)
+  );
+  const [showHowToPlay, setShowHowToPlay] = useState(() =>
+    shouldShowTutorialOnLoad(saved)
+  );
 
   const initialSeconds =
     saved.isComplete && saved.completionSeconds !== null
@@ -131,6 +141,7 @@ export default function GameScreen() {
 
     setSavedComplete(true);
     setCompletionSeconds(seconds);
+    markTutorialSeen();
 
     saveGameState({
       puzzleId: puzzle.id,

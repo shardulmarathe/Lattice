@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
 import { loadGameState, saveGameState } from "@/lib/gameStorage";
+import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
 import { formatTime } from "@/lib/validation";
@@ -47,6 +48,7 @@ export default function CompleteScreen() {
     if (!saved) return;
 
     saveGameState({ ...saved, isViewingSolve: true });
+    markTutorialSeen();
     router.push("/play");
   }, [puzzle.id, router]);
 
