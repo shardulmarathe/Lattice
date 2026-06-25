@@ -22,6 +22,7 @@ import Board from "@/components/Board/Board";
 import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
 import HowToPlayModal from "@/components/HowToPlayModal";
+import PauseOverlay from "@/components/PauseOverlay";
 import { useTimer } from "@/hooks/useTimer";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 
@@ -231,6 +232,10 @@ export default function GameScreen() {
     setIsPaused((p) => !p);
   }, []);
 
+  const handleResume = useCallback(() => {
+    setIsPaused(false);
+  }, []);
+
   const handleHome = useCallback(() => {
     router.push("/");
   }, [router]);
@@ -263,6 +268,9 @@ export default function GameScreen() {
 
   const displayTime = formatTime(displaySeconds);
 
+  const boardObscured = showHowToPlay || (isPaused && !isComplete);
+  const showPauseOverlay = isPaused && !isComplete && !showHowToPlay;
+
   return (
     <main className="flex min-h-screen flex-col bg-black">
       <Header
@@ -277,7 +285,7 @@ export default function GameScreen() {
 
       <div
         className={`flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-4 transition-opacity duration-300 ${
-          showHowToPlay ? "pointer-events-none opacity-40" : "opacity-100"
+          boardObscured ? "pointer-events-none opacity-40" : "opacity-100"
         }`}
       >
         <h1 className="mb-2 text-center text-3xl font-light tracking-[0.4em] text-white md:text-4xl">
@@ -317,6 +325,8 @@ export default function GameScreen() {
         overlayOnGame
         dismissOnBackdrop={!pendingFirstPlay}
       />
+
+      <PauseOverlay isOpen={showPauseOverlay} onResume={handleResume} />
     </main>
   );
 }

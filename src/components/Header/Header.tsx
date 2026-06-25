@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 const buttonBase =
-  "bg-transparent px-3 py-1.5 text-[0.83rem] tracking-[0.15em] text-white/38 transition-colors outline-none focus:outline-none focus-visible:outline-none hover:text-white/52 disabled:cursor-not-allowed md:px-4 md:py-2 md:text-[0.97rem] [-webkit-tap-highlight-color:transparent]";
+  "bg-transparent px-3 py-1.5 text-[0.83rem] tracking-[0.15em] text-white/88 transition-colors outline-none focus:outline-none focus-visible:outline-none hover:text-white disabled:cursor-not-allowed disabled:text-white/38 md:px-4 md:py-2 md:text-[0.97rem] [-webkit-tap-highlight-color:transparent]";
 
 const navButtonClass = `${buttonBase} border border-transparent active:border-transparent`;
 
@@ -25,7 +25,7 @@ export default function Header({
   disabled = false,
 }: HeaderProps) {
   return (
-    <header className="flex w-full items-center justify-between px-4 py-3 md:px-6">
+    <header className="flex w-full items-center justify-between px-4 pb-3 pt-6 md:px-6 md:pt-7">
       <div className="flex gap-2 md:gap-3">
         <button onClick={onHome} className={navButtonClass}>
           HOME
