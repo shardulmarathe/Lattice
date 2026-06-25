@@ -32,8 +32,8 @@ export function mirrorCellKey(x: number, y: number): string {
 
 export function buildMirrorContactMap(
   segments: LaserSegment[]
-): Map<string, MirrorContact> {
-  const map = new Map<string, MirrorContact>();
+): Map<string, MirrorContact[]> {
+  const map = new Map<string, MirrorContact[]>();
 
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
@@ -44,15 +44,42 @@ export function buildMirrorContactMap(
       seg.to.x === next.from.x &&
       seg.to.y === next.from.y
     ) {
-      map.set(mirrorCellKey(seg.to.x, seg.to.y), {
+      const key = mirrorCellKey(seg.to.x, seg.to.y);
+      const list = map.get(key) ?? [];
+      list.push({
         incomingFrom: seg.from,
         outgoingTo: next.to,
       });
+      map.set(key, list);
     }
   }
 
   return map;
 }
+
+/** True when the laser hits a mirror from opposing sides (e.g. left + right). */
+export function hasOpposingMirrorHits(
+  contacts: MirrorContact[],
+  mirrorCell: Position
+): boolean {
+  let fromEast = false;
+  let fromWest = false;
+  let fromNorth = false;
+  let fromSouth = false;
+
+  for (const contact of contacts) {
+    const incomingDir = getGridDirection(contact.incomingFrom, mirrorCell);
+    if (incomingDir.dx < 0) fromEast = true;
+    if (incomingDir.dx > 0) fromWest = true;
+    if (incomingDir.dy > 0) fromNorth = true;
+    if (incomingDir.dy < 0) fromSouth = true;
+  }
+
+  return (fromEast && fromWest) || (fromNorth && fromSouth);
+}
+
+/** Near-center placement when hit from opposing sides — slight up-left nudge. */
+export const OPPOSING_MIRROR_VISUAL_OFFSET: PathPoint = { x: -1.2, y: -1.2 };
 
 function getGridDirection(
   from: Position,

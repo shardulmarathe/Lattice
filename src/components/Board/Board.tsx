@@ -10,7 +10,9 @@ import type {
 import {
   buildMirrorContactMap,
   getMirrorVisualOffset,
+  hasOpposingMirrorHits,
   mirrorCellKey,
+  OPPOSING_MIRROR_VISUAL_OFFSET,
 } from "@/lib/laserPathUtils";
 import FlagTile from "./FlagTile";
 import NumberTile from "./NumberTile";
@@ -73,9 +75,14 @@ export default function Board({
   };
 
   const getMirrorOffset = (x: number, y: number, orientation: MirrorOrientation) => {
-    const contact = mirrorContacts.get(mirrorCellKey(x, y));
-    if (!contact) return { x: 0, y: 0 };
-    return getMirrorVisualOffset(contact, { x, y }, cellSize, orientation);
+    const contacts = mirrorContacts.get(mirrorCellKey(x, y));
+    if (!contacts?.length) return { x: 0, y: 0 };
+    const mirrorCell = { x, y };
+    if (hasOpposingMirrorHits(contacts, mirrorCell)) {
+      return OPPOSING_MIRROR_VISUAL_OFFSET;
+    }
+    const contact = contacts[contacts.length - 1];
+    return getMirrorVisualOffset(contact, mirrorCell, cellSize, orientation);
   };
 
   return (
