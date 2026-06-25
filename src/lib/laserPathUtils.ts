@@ -202,18 +202,7 @@ export function getFlagVisualCenter(
   flagY: number,
   cellSize: number
 ): PathPoint {
-  const cellCenter = toPixel(flagX, flagY, cellSize);
-  const flagSize = cellSize * 0.5;
-  const viewBoxCenter = 12;
-  const visualCenterX = 9;
-  const visualCenterY = 12;
-  const offsetX = ((visualCenterX - viewBoxCenter) / 24) * flagSize;
-  const offsetY = ((visualCenterY - viewBoxCenter) / 24) * flagSize;
-
-  return {
-    x: cellCenter.x + offsetX,
-    y: cellCenter.y + offsetY,
-  };
+  return toPixel(flagX, flagY, cellSize);
 }
 
 function shortenLastSegmentToFlagOrbit(

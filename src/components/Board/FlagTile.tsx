@@ -18,13 +18,15 @@ export default function FlagTile({ size }: FlagTileProps) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M5 21V3M5 3L15 7L5 11"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <g transform="translate(2 0)">
+          <path
+            d="M5 21V3M5 3L15 7L5 11"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       </svg>
     </div>
   );
