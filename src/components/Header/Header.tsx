@@ -4,6 +4,7 @@ interface HeaderProps {
   time: string;
   isPaused: boolean;
   onHome: () => void;
+  onRules: () => void;
   onPause: () => void;
   onClear: () => void;
   disabled?: boolean;
@@ -18,6 +19,7 @@ export default function Header({
   time,
   isPaused,
   onHome,
+  onRules,
   onPause,
   onClear,
   disabled = false,
@@ -38,6 +40,9 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-3 md:gap-4">
+        <button onClick={onRules} className={navButtonClass}>
+          RULES
+        </button>
         <button
           onClick={onPause}
           disabled={disabled}

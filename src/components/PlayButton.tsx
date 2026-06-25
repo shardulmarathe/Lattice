@@ -180,7 +180,6 @@ export default function PlayButton() {
       loadCompleteTimeRef.current = performance.now() - startTime;
       progressAtLoadRef.current = displayProgressRef.current;
 
-      // Backend may be ready early; frontend keeps tracing until the lap finishes.
       await waitForLaserLap(startTime, () => loadCompleteTimeRef.current);
 
       displayProgressRef.current = 1;
@@ -203,7 +202,7 @@ export default function PlayButton() {
         whileTap={isNavigating ? undefined : { scale: 0.98 }}
         onMouseEnter={handlePrefetch}
         onFocus={handlePrefetch}
-        onClick={handlePlay}
+        onClick={() => void handlePlay()}
         disabled={isNavigating}
         className={`${buttonClass} ${isNavigating ? "border-transparent text-white/80" : ""}`}
       >

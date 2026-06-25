@@ -21,7 +21,9 @@ import { validateSequence, formatTime } from "@/lib/validation";
 import Board from "@/components/Board/Board";
 import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
+import HowToPlayModal from "@/components/HowToPlayModal";
 import { useTimer } from "@/hooks/useTimer";
+import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 
 const COMPLETION_NAV_DELAY_MS = 350;
 
@@ -65,6 +67,8 @@ export default function GameScreen() {
   const [completionSeconds, setCompletionSeconds] = useState<number | null>(
     saved.completionSeconds
   );
+  const [pendingFirstPlay, setPendingFirstPlay] = useState(() => !hasSeenTutorial());
+  const [showHowToPlay, setShowHowToPlay] = useState(() => !hasSeenTutorial());
 
   const initialSeconds =
     saved.isComplete && saved.completionSeconds !== null
@@ -84,7 +88,7 @@ export default function GameScreen() {
   const isComplete = savedComplete || validation.isComplete;
 
   const { seconds } = useTimer({
-    isPaused,
+    isPaused: isPaused || showHowToPlay,
     isComplete,
     initialSeconds,
     enabled: true,
@@ -220,10 +224,28 @@ export default function GameScreen() {
     router.push("/");
   }, [router]);
 
+  const handleRules = useCallback(() => {
+    setShowHowToPlay(true);
+  }, []);
+
+  const handleHowToPlayConfirm = useCallback(() => {
+    if (pendingFirstPlay) {
+      markTutorialSeen();
+      setPendingFirstPlay(false);
+    }
+    setShowHowToPlay(false);
+  }, [pendingFirstPlay]);
+
+  const handleHowToPlayClose = useCallback(() => {
+    if (!pendingFirstPlay) {
+      setShowHowToPlay(false);
+    }
+  }, [pendingFirstPlay]);
+
   const showVictoryLaser =
     validation.isComplete && laserResult.reachedFlag;
 
-  const interactionsDisabled = isPaused || isComplete;
+  const interactionsDisabled = isPaused || isComplete || showHowToPlay;
 
   const displaySeconds =
     isComplete && completionSeconds !== null ? completionSeconds : seconds;
@@ -236,12 +258,17 @@ export default function GameScreen() {
         time={displayTime}
         isPaused={isPaused}
         onHome={handleHome}
+        onRules={handleRules}
         onPause={handlePause}
         onClear={handleClearBoard}
-        disabled={isComplete}
+        disabled={isComplete || showHowToPlay}
       />
 
-      <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-4">
+      <div
+        className={`flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-4 transition-opacity duration-300 ${
+          showHowToPlay ? "pointer-events-none opacity-40" : "opacity-100"
+        }`}
+      >
         <h1 className="mb-2 text-center text-3xl font-light tracking-[0.4em] text-white md:text-4xl">
           LATTICE
         </h1>
@@ -271,6 +298,14 @@ export default function GameScreen() {
           <WarningBanner message={validation.warningMessage} inline />
         )}
       </div>
+
+      <HowToPlayModal
+        isOpen={showHowToPlay}
+        onClose={handleHowToPlayClose}
+        onConfirm={handleHowToPlayConfirm}
+        overlayOnGame
+        dismissOnBackdrop={!pendingFirstPlay}
+      />
     </main>
   );
 }

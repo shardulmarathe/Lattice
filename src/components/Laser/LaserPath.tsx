@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LaserSegment, Position } from "@/lib/puzzleTypes";
 import {
   buildContinuousPath,
   buildVictoryLinearPath,
-  FLAG_ORBIT_RADIUS_RATIO,
-  getFlagVisualCenter,
   getPointOnPath,
-  segmentToPixels,
+  type ContinuousPath,
+  type PathPoint,
 } from "@/lib/laserPathUtils";
 
 interface LaserPathProps {
@@ -17,6 +16,9 @@ interface LaserPathProps {
   cellSize: number;
   victoryMode?: boolean;
   flagPosition?: Position;
+  /** 0–1: partial beam draw for tutorial animations. Default 1 = full beam. */
+  drawProgress?: number;
+  showParticles?: boolean;
 }
 
 const PARTICLE_COUNT = 7;
@@ -32,13 +34,66 @@ interface Particle {
   radius: number;
 }
 
+interface ClippedSegment {
+  from: PathPoint;
+  to: PathPoint;
+}
+
+function clipPathToProgress(
+  path: ContinuousPath,
+  progress: number
+): ClippedSegment[] {
+  if (path.points.length < 2 || progress <= 0) return [];
+
+  const clamped = Math.min(1, Math.max(0, progress));
+  if (clamped >= 1) {
+    return path.points.slice(1).map((to, i) => ({
+      from: path.points[i],
+      to,
+    }));
+  }
+
+  const targetLength = clamped * path.totalLength;
+  const clipped: ClippedSegment[] = [];
+  let walked = 0;
+
+  for (let i = 0; i < path.segmentLengths.length; i++) {
+    const segLen = path.segmentLengths[i];
+    const from = path.points[i];
+    const to = path.points[i + 1];
+
+    if (walked + segLen <= targetLength) {
+      clipped.push({ from, to });
+      walked += segLen;
+      continue;
+    }
+
+    if (walked < targetLength) {
+      const ratio = segLen === 0 ? 0 : (targetLength - walked) / segLen;
+      clipped.push({
+        from,
+        to: {
+          x: from.x + (to.x - from.x) * ratio,
+          y: from.y + (to.y - from.y) * ratio,
+        },
+      });
+    }
+    break;
+  }
+
+  return clipped;
+}
+
 export default function LaserPath({
   segments,
   gridSize,
   cellSize,
   victoryMode = false,
   flagPosition,
+  drawProgress = 1,
+  showParticles = true,
 }: LaserPathProps) {
+  const filterId = useId().replace(/:/g, "");
   const [particles, setParticles] = useState<Particle[]>([]);
   const [particlesEnabled, setParticlesEnabled] = useState(false);
   const phaseRef = useRef(0);
@@ -52,13 +107,19 @@ export default function LaserPath({
     return buildContinuousPath(segments, cellSize);
   }, [segments, cellSize, victoryMode, flagPosition]);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setParticlesEnabled(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
+  const clippedSegments = useMemo(
+    () => clipPathToProgress(path, drawProgress),
+    [path, drawProgress]
+  );
 
   useEffect(() => {
-    if (!particlesEnabled || path.totalLength === 0) {
+    if (!showParticles) return;
+    const id = requestAnimationFrame(() => setParticlesEnabled(true));
+    return () => cancelAnimationFrame(id);
+  }, [showParticles]);
+
+  useEffect(() => {
+    if (!showParticles || !particlesEnabled || path.totalLength === 0) {
       setParticles([]);
       return;
     }
@@ -87,38 +148,7 @@ export default function LaserPath({
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [path, particlesEnabled]);
-
-  const orbitRadius = cellSize * FLAG_ORBIT_RADIUS_RATIO;
-
-  const getSegmentPixels = (seg: LaserSegment, index: number) => {
-    const { from, to: clippedTo } = segmentToPixels(seg, cellSize);
-    let to = clippedTo;
-
-    const isLast = index === segments.length - 1;
-    if (
-      victoryMode &&
-      flagPosition &&
-      isLast &&
-      seg.to.x === flagPosition.x &&
-      seg.to.y === flagPosition.y
-    ) {
-      const flagCenter = getFlagVisualCenter(
-        flagPosition.x,
-        flagPosition.y,
-        cellSize
-      );
-      const dx = flagCenter.x - from.x;
-      const dy = flagCenter.y - from.y;
-      const mag = Math.hypot(dx, dy) || 1;
-      to = {
-        x: flagCenter.x - (dx / mag) * orbitRadius,
-        y: flagCenter.y - (dy / mag) * orbitRadius,
-      };
-    }
-
-    return { from, to };
-  };
+  }, [path, particlesEnabled, showParticles]);
 
   if (segments.length === 0) return null;
 
@@ -130,7 +160,13 @@ export default function LaserPath({
       style={{ overflow: "visible" }}
     >
       <defs>
-        <filter id="beam-bloom" x="-80%" y="-80%" width="260%" height="260%">
+        <filter
+          id={`beam-bloom-${filterId}`}
+          x="-80%"
+          y="-80%"
+          width="260%"
+          height="260%"
+        >
           <feGaussianBlur stdDeviation="3.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -139,38 +175,37 @@ export default function LaserPath({
         </filter>
       </defs>
 
-      {segments.map((seg, i) => {
-        const { from, to } = getSegmentPixels(seg, i);
-        const key = `${seg.from.x}-${seg.from.y}-${seg.to.x}-${seg.to.y}-${i}`;
+      {clippedSegments.map((seg, i) => {
+        const key = `clip-${seg.from.x}-${seg.from.y}-${seg.to.x}-${seg.to.y}-${i}`;
 
         return (
           <g key={key}>
             <line
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
+              x1={seg.from.x}
+              y1={seg.from.y}
+              x2={seg.to.x}
+              y2={seg.to.y}
               stroke="#FF4A2D"
               strokeWidth={8}
               strokeLinecap="round"
               strokeOpacity={0.28}
-              filter="url(#beam-bloom)"
+              filter={`url(#beam-bloom-${filterId})`}
             />
             <line
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
+              x1={seg.from.x}
+              y1={seg.from.y}
+              x2={seg.to.x}
+              y2={seg.to.y}
               stroke="#FF3B1F"
               strokeWidth={3.5}
               strokeLinecap="round"
               strokeOpacity={0.95}
             />
             <line
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
+              x1={seg.from.x}
+              y1={seg.from.y}
+              x2={seg.to.x}
+              y2={seg.to.y}
               stroke="#FFFFFF"
               strokeWidth={1}
               strokeLinecap="round"
@@ -180,24 +215,25 @@ export default function LaserPath({
         );
       })}
 
-      {particles.map((p, i) => (
-        <g key={`particle-${i}`}>
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r={p.radius + 2}
-            fill="#FF3B1F"
-            opacity={p.opacity * 0.3}
-          />
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r={p.radius}
-            fill="#FFFFFF"
-            opacity={p.opacity}
-          />
-        </g>
-      ))}
+      {showParticles &&
+        particles.map((p, i) => (
+          <g key={`particle-${i}`}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={p.radius + 2}
+              fill="#FF3B1F"
+              opacity={p.opacity * 0.3}
+            />
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={p.radius}
+              fill="#FFFFFF"
+              opacity={p.opacity}
+            />
+          </g>
+        ))}
     </svg>
   );
 }
