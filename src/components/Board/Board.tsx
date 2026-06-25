@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   BoardCell,
   LaserResult,
+  MirrorOrientation,
   Puzzle,
 } from "@/lib/puzzleTypes";
+import {
+  buildMirrorContactMap,
+  getMirrorVisualOffset,
+  mirrorCellKey,
+} from "@/lib/laserPathUtils";
 import FlagTile from "./FlagTile";
 import NumberTile from "./NumberTile";
 import SourceTile from "./SourceTile";
@@ -52,6 +58,10 @@ export default function Board({
   }, [puzzle.gridSize]);
 
   const boardSize = puzzle.gridSize * cellSize;
+  const mirrorContacts = useMemo(
+    () => buildMirrorContactMap(laserResult.segments),
+    [laserResult.segments]
+  );
 
   const isNumberCollected = (value: number) => collectedNumbers.has(value);
 
@@ -60,6 +70,12 @@ export default function Board({
     if (cell.type === "empty" || cell.type === "mirror") {
       onCellClick(x, y);
     }
+  };
+
+  const getMirrorOffset = (x: number, y: number, orientation: MirrorOrientation) => {
+    const contact = mirrorContacts.get(mirrorCellKey(x, y));
+    if (!contact) return { x: 0, y: 0 };
+    return getMirrorVisualOffset(contact, { x, y }, cellSize, orientation);
   };
 
   return (
@@ -78,6 +94,10 @@ export default function Board({
           row.map((cell, x) => {
             const isInteractive =
               !disabled && (cell.type === "empty" || cell.type === "mirror");
+            const mirrorOffset =
+              cell.type === "mirror" && cell.mirror
+                ? getMirrorOffset(x, y, cell.mirror)
+                : null;
 
             return (
               <div
@@ -109,10 +129,12 @@ export default function Board({
                   />
                 )}
 
-                {cell.type === "mirror" && cell.mirror && (
+                {mirrorOffset && cell.mirror && (
                   <MirrorTile
                     orientation={cell.mirror}
                     size={cellSize}
+                    offsetX={mirrorOffset.x}
+                    offsetY={mirrorOffset.y}
                   />
                 )}
               </div>

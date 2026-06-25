@@ -8,14 +8,13 @@ import {
   FLAG_ORBIT_RADIUS_RATIO,
   getFlagVisualCenter,
   getPointOnPath,
-  toPixel,
+  segmentToPixels,
 } from "@/lib/laserPathUtils";
 
 interface LaserPathProps {
   segments: LaserSegment[];
   gridSize: number;
   cellSize: number;
-  /** When true, beam stops at flag orbit; path particles still flow along the solution. */
   victoryMode?: boolean;
   flagPosition?: Position;
 }
@@ -93,8 +92,8 @@ export default function LaserPath({
   const orbitRadius = cellSize * FLAG_ORBIT_RADIUS_RATIO;
 
   const getSegmentPixels = (seg: LaserSegment, index: number) => {
-    const from = toPixel(seg.from.x, seg.from.y, cellSize);
-    let to = toPixel(seg.to.x, seg.to.y, cellSize);
+    const { from, to: clippedTo } = segmentToPixels(seg, cellSize);
+    let to = clippedTo;
 
     const isLast = index === segments.length - 1;
     if (
@@ -146,30 +145,27 @@ export default function LaserPath({
 
         return (
           <g key={key}>
-            {/* Layer 3: outer bloom */}
             <line
               x1={from.x}
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke="#FF2D2D"
+              stroke="#FF4A2D"
               strokeWidth={8}
               strokeLinecap="round"
-              strokeOpacity={0.18}
+              strokeOpacity={0.28}
               filter="url(#beam-bloom)"
             />
-            {/* Layer 2: red beam body */}
             <line
               x1={from.x}
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke="#FF2D2D"
+              stroke="#FF3B1F"
               strokeWidth={3.5}
               strokeLinecap="round"
-              strokeOpacity={0.85}
+              strokeOpacity={0.95}
             />
-            {/* Layer 1: white core */}
             <line
               x1={from.x}
               y1={from.y}
@@ -184,15 +180,14 @@ export default function LaserPath({
         );
       })}
 
-      {/* Energy particles */}
       {particles.map((p, i) => (
         <g key={`particle-${i}`}>
           <circle
             cx={p.x}
             cy={p.y}
             r={p.radius + 2}
-            fill="#FF2D2D"
-            opacity={p.opacity * 0.25}
+            fill="#FF3B1F"
+            opacity={p.opacity * 0.3}
           />
           <circle
             cx={p.x}

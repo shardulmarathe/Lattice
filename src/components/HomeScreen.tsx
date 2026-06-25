@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CursorLaserTrail from "./CursorLaserTrail";
-import HowToPlayModal from "./HowToPlayModal";
 import PlayButton from "./PlayButton";
 
 const buttonClass =
@@ -12,7 +11,6 @@ const buttonClass =
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isOverButtons, setIsOverButtons] = useState(false);
 
@@ -50,15 +48,6 @@ export default function HomeScreen() {
         >
           <PlayButton />
 
-          <motion.button
-            whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowHowToPlay(true)}
-            className={buttonClass}
-          >
-            HOW TO PLAY
-          </motion.button>
-
           <motion.a
             href="https://forms.gle/SwrFyj3ww3GoJc4u7"
             target="_blank"
@@ -71,11 +60,6 @@ export default function HomeScreen() {
           </motion.a>
         </div>
       </motion.div>
-
-      <HowToPlayModal
-        isOpen={showHowToPlay}
-        onClose={() => setShowHowToPlay(false)}
-      />
     </main>
   );
 }

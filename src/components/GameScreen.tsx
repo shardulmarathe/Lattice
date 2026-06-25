@@ -208,9 +208,9 @@ export default function GameScreen() {
   );
 
   const handleClearBoard = useCallback(() => {
-    if (isPaused || isComplete) return;
+    if (isComplete) return;
     setMirrors([]);
-  }, [isPaused, isComplete]);
+  }, [isComplete]);
 
   const handlePause = useCallback(() => {
     setIsPaused((p) => !p);
