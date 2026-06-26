@@ -65,11 +65,12 @@ export default function TutorialDemoBoard({
               {cell.type === "flag" && <FlagTile size={cellSize} />}
 
               {cell.type === "number" && cell.number !== undefined && (
-                <NumberTile
-                  value={cell.number}
-                  size={cellSize}
-                  isCollected={collectedNumbers.has(cell.number)}
-                />
+                  <NumberTile
+                    value={cell.number}
+                    size={cellSize}
+                    isCollected={collectedNumbers.has(cell.number)}
+                    isIncorrect={false}
+                  />
               )}
 
               {cell.type === "mirror" && cell.mirror && (

@@ -7,10 +7,13 @@ interface WarningBannerProps {
   inline?: boolean;
 }
 
+const warningClass =
+  "animate-warning-flash-glow text-center text-xl font-medium text-[#FF4444] md:text-[1.4rem]";
+
 export default function WarningBanner({ message, inline = false }: WarningBannerProps) {
   if (inline) {
     return (
-      <div className="relative h-6 w-full max-w-lg">
+      <div className="relative h-12 w-full max-w-lg md:h-[3.75rem]">
         <AnimatePresence>
           {message && (
             <motion.p
@@ -18,7 +21,7 @@ export default function WarningBanner({ message, inline = false }: WarningBanner
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="absolute inset-x-0 top-0 text-center text-sm text-[#FF4444] md:text-base"
+              className={`absolute inset-x-0 top-0 ${warningClass}`}
             >
               {message}
             </motion.p>
@@ -38,9 +41,7 @@ export default function WarningBanner({ message, inline = false }: WarningBanner
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="overflow-hidden"
         >
-          <p className="px-4 py-2 text-center text-sm text-[#FF4444] md:text-base">
-            {message}
-          </p>
+          <p className={`px-4 py-3 ${warningClass}`}>{message}</p>
         </motion.div>
       )}
     </AnimatePresence>

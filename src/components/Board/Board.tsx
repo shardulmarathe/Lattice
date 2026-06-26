@@ -25,7 +25,9 @@ interface BoardProps {
   puzzle: Puzzle;
   board: BoardCell[][];
   laserResult: LaserResult;
-  collectedNumbers: Set<number>;
+  collectedNumberKeys: Set<string>;
+  incorrectNumberKeys: Set<string>;
+  isFlagIncorrect?: boolean;
   onCellClick: (x: number, y: number) => void;
   disabled?: boolean;
   showVictoryLaser?: boolean;
@@ -43,7 +45,9 @@ export default function Board({
   puzzle,
   board,
   laserResult,
-  collectedNumbers,
+  collectedNumberKeys,
+  incorrectNumberKeys,
+  isFlagIncorrect = false,
   onCellClick,
   disabled = false,
   showVictoryLaser = false,
@@ -65,7 +69,11 @@ export default function Board({
     [laserResult.segments]
   );
 
-  const isNumberCollected = (value: number) => collectedNumbers.has(value);
+  const isNumberCollected = (x: number, y: number) =>
+    collectedNumberKeys.has(mirrorCellKey(x, y));
+
+  const isNumberIncorrect = (x: number, y: number) =>
+    incorrectNumberKeys.has(mirrorCellKey(x, y));
 
   const handleCellClick = (cell: BoardCell, x: number, y: number) => {
     if (disabled) return;
@@ -126,13 +134,16 @@ export default function Board({
                   />
                 )}
 
-                {cell.type === "flag" && <FlagTile size={cellSize} />}
+                {cell.type === "flag" && (
+                  <FlagTile size={cellSize} isIncorrect={isFlagIncorrect} />
+                )}
 
                 {cell.type === "number" && cell.number !== undefined && (
                   <NumberTile
                     value={cell.number}
                     size={cellSize}
-                    isCollected={isNumberCollected(cell.number)}
+                    isCollected={isNumberCollected(x, y)}
+                    isIncorrect={isNumberIncorrect(x, y)}
                   />
                 )}
 

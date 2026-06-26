@@ -100,3 +100,37 @@ body {
 .animate-code-solved-glow {
   animation: code-solved-glow 2s ease-in-out infinite;
 }
+
+@keyframes warning-flash-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 12px rgba(255, 68, 68, 0.55),
+      0 0 24px rgba(255, 59, 31, 0.35);
+  }
+  50% {
+    text-shadow: 0 0 22px rgba(255, 68, 68, 0.95),
+      0 0 44px rgba(255, 59, 31, 0.6);
+  }
+}
+
+@keyframes number-error-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(255, 59, 31, 0.65),
+      0 0 24px rgba(255, 45, 45, 0.35);
+    color: #ff3b1f;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(255, 59, 31, 0.95),
+      0 0 44px rgba(255, 45, 45, 0.55);
+    color: #ff6b4a;
+  }
+}
+
+.animate-warning-flash-glow {
+  animation: warning-flash-glow 1.5s ease-in-out infinite;
+}
+
+.animate-number-error-glow {
+  animation: number-error-glow 2s ease-in-out infinite;
+}

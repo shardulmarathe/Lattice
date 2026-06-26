@@ -17,7 +17,7 @@ import {
   type SavedGameState,
 } from "@/lib/gameStorage";
 import type { MirrorPlacement, Puzzle } from "@/lib/puzzleTypes";
-import { validateSequence, formatTime } from "@/lib/validation";
+import { validateSequence, formatTime, getNumberTileStates } from "@/lib/validation";
 import Board from "@/components/Board/Board";
 import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
@@ -182,18 +182,11 @@ export default function GameScreen() {
     [puzzle, mirrors]
   );
 
-  const collectedSet = useMemo(() => {
-    const targetDigits = puzzle.code.split("").map(Number);
-    const collected: Set<number> = new Set();
-    let matchIndex = 0;
-    for (const num of laserResult.collectedNumbers) {
-      if (matchIndex < targetDigits.length && num === targetDigits[matchIndex]) {
-        collected.add(num);
-        matchIndex++;
-      }
-    }
-    return collected;
-  }, [laserResult.collectedNumbers, puzzle.code]);
+  const { collectedKeys, incorrectKeys } = useMemo(
+    () =>
+      getNumberTileStates(puzzle.code, board, laserResult.visitedCells),
+    [puzzle.code, board, laserResult.visitedCells]
+  );
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -261,6 +254,10 @@ export default function GameScreen() {
   const showVictoryLaser =
     validation.isComplete && laserResult.reachedFlag;
 
+  const isFlagIncorrect =
+    laserResult.reachedFlag &&
+    validation.generatedSequence !== puzzle.code;
+
   const interactionsDisabled = isPaused || isComplete || showHowToPlay;
 
   const displaySeconds =
@@ -293,21 +290,21 @@ export default function GameScreen() {
         </h1>
 
         <p
-          className={`mb-8 text-center text-lg tracking-wider transition-colors duration-500 md:text-2xl ${
-            isComplete
-              ? "animate-code-solved-glow text-white"
-              : "animate-code-label-glow text-[#FF3B1F]"
+          className={`mb-8 text-center text-lg tracking-wider text-white md:text-2xl ${
+            isComplete ? "animate-code-solved-glow" : ""
           }`}
         >
-          Make the Code:{" "}
-          <span className="font-mono">{puzzle.code}</span>
+          Target Code:{" "}
+          <span className="font-mono text-white">{puzzle.code}</span>
         </p>
 
         <Board
           puzzle={puzzle}
           board={board}
           laserResult={laserResult}
-          collectedNumbers={collectedSet}
+          collectedNumberKeys={collectedKeys}
+          incorrectNumberKeys={incorrectKeys}
+          isFlagIncorrect={isFlagIncorrect}
           onCellClick={handleCellClick}
           disabled={interactionsDisabled}
           showVictoryLaser={showVictoryLaser}
