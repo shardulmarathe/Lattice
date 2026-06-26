@@ -292,9 +292,15 @@ export default function GameScreen() {
           LATTICE
         </h1>
 
-        <p className="mb-8 text-center text-lg tracking-wider text-white md:text-2xl">
-          Target Code:{" "}
-          <span className="font-mono text-white">{puzzle.code}</span>
+        <p
+          className={`mb-8 text-center text-lg tracking-wider transition-colors duration-500 md:text-2xl ${
+            isComplete
+              ? "animate-code-solved-glow text-white"
+              : "animate-code-label-glow text-[#FF3B1F]"
+          }`}
+        >
+          Make the Code:{" "}
+          <span className="font-mono">{puzzle.code}</span>
         </p>
 
         <Board

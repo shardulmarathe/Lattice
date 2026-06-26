@@ -68,3 +68,35 @@ body {
 .animate-number-glow {
   animation: number-glow 2s ease-in-out infinite;
 }
+
+@keyframes code-label-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 14px rgba(255, 59, 31, 0.55),
+      0 0 28px rgba(255, 45, 45, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 59, 31, 0.75),
+      0 0 40px rgba(255, 45, 45, 0.45);
+  }
+}
+
+@keyframes code-solved-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.55),
+      0 0 24px rgba(255, 255, 255, 0.28);
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(255, 255, 255, 0.85),
+      0 0 36px rgba(255, 255, 255, 0.45);
+  }
+}
+
+.animate-code-label-glow {
+  animation: code-label-glow 2.5s ease-in-out infinite;
+}
+
+.animate-code-solved-glow {
+  animation: code-solved-glow 2s ease-in-out infinite;
+}
