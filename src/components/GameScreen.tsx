@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
 import {
@@ -23,6 +23,7 @@ import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
 import HowToPlayModal from "@/components/HowToPlayModal";
 import PauseOverlay from "@/components/PauseOverlay";
+import TargetCodeIntro from "@/components/Game/TargetCodeIntro";
 import { useTimer } from "@/hooks/useTimer";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 
@@ -80,6 +81,10 @@ export default function GameScreen() {
   const [showHowToPlay, setShowHowToPlay] = useState(() =>
     shouldShowTutorialOnLoad(saved)
   );
+  const shouldPlayCodeIntro = !isViewingSolve && !saved.isComplete;
+  const [codeIntroComplete, setCodeIntroComplete] = useState(
+    () => !shouldPlayCodeIntro
+  );
 
   const initialSeconds =
     saved.isComplete && saved.completionSeconds !== null
@@ -98,8 +103,11 @@ export default function GameScreen() {
 
   const isComplete = savedComplete || validation.isComplete;
 
+  const gameplayLocked =
+    showHowToPlay || (shouldPlayCodeIntro && !codeIntroComplete);
+
   const { seconds } = useTimer({
-    isPaused: isPaused || showHowToPlay,
+    isPaused: isPaused || gameplayLocked,
     isComplete,
     initialSeconds,
     enabled: true,
@@ -251,6 +259,10 @@ export default function GameScreen() {
     }
   }, [pendingFirstPlay]);
 
+  const handleCodeIntroComplete = useCallback(() => {
+    setCodeIntroComplete(true);
+  }, []);
+
   const showVictoryLaser =
     validation.isComplete && laserResult.reachedFlag;
 
@@ -258,18 +270,48 @@ export default function GameScreen() {
     laserResult.reachedFlag &&
     validation.generatedSequence !== puzzle.code;
 
-  const interactionsDisabled = isPaused || isComplete || showHowToPlay;
+  const interactionsDisabled =
+    isPaused || isComplete || gameplayLocked;
 
   const displaySeconds =
     isComplete && completionSeconds !== null ? completionSeconds : seconds;
 
   const displayTime = formatTime(displaySeconds);
 
-  const boardObscured = showHowToPlay || (isPaused && !isComplete);
-  const showPauseOverlay = isPaused && !isComplete && !showHowToPlay;
+  const codeIntroActive =
+    shouldPlayCodeIntro && !codeIntroComplete && !showHowToPlay;
+
+  const boardObscured =
+    gameplayLocked || (isPaused && !isComplete);
+  const contentDimClass = codeIntroActive
+    ? "pointer-events-none opacity-[0.12]"
+    : boardObscured
+      ? "pointer-events-none opacity-40"
+      : "opacity-100";
+  const showPauseOverlay =
+    isPaused && !isComplete && !gameplayLocked;
+
+  const boardSlotRef = useRef<HTMLDivElement>(null);
+  const [boardSlotHeight, setBoardSlotHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    const slot = boardSlotRef.current;
+    if (!slot) return;
+
+    const updateHeight = () => {
+      setBoardSlotHeight(slot.clientHeight);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(slot);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <main className="flex min-h-screen flex-col bg-black">
+    <main className="flex h-dvh flex-col overflow-hidden bg-black">
       <Header
         time={displayTime}
         isPaused={isPaused}
@@ -277,48 +319,59 @@ export default function GameScreen() {
         onRules={handleRules}
         onPause={handlePause}
         onClear={handleClearBoard}
-        disabled={isComplete || showHowToPlay}
+        disabled={isComplete || gameplayLocked}
       />
 
-      <div
-        className={`flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-4 transition-opacity duration-300 ${
-          boardObscured ? "pointer-events-none opacity-40" : "opacity-100"
-        }`}
-      >
-        <h1 className="mb-2 text-center text-3xl font-light tracking-[0.4em] text-white md:text-4xl">
-          LATTICE
-        </h1>
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 md:pt-4">
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-3 md:gap-5">
+          <div
+            className={`shrink-0 transition-opacity duration-500 ${contentDimClass}`}
+          >
+            <h1 className="text-center text-2xl font-light tracking-[0.4em] text-white md:text-4xl">
+              LATTICE
+            </h1>
+          </div>
 
-        <p
-          className={`mb-8 text-center text-lg tracking-wider text-white md:text-2xl ${
-            isComplete ? "animate-code-solved-glow" : ""
-          }`}
+          <TargetCodeIntro
+            code={puzzle.code}
+            isComplete={isComplete}
+            playIntro={shouldPlayCodeIntro}
+            introPaused={showHowToPlay}
+            onIntroComplete={handleCodeIntroComplete}
+          />
+
+          <div
+            ref={boardSlotRef}
+            className={`flex min-h-0 w-full flex-1 items-start justify-center transition-opacity duration-500 ${contentDimClass}`}
+          >
+            <Board
+              puzzle={puzzle}
+              board={board}
+              laserResult={laserResult}
+              collectedNumberKeys={collectedKeys}
+              incorrectNumberKeys={incorrectKeys}
+              isFlagIncorrect={isFlagIncorrect}
+              onCellClick={handleCellClick}
+              disabled={interactionsDisabled}
+              showVictoryLaser={showVictoryLaser}
+              maxBoardHeight={boardSlotHeight}
+            />
+          </div>
+        </div>
+
+        <div
+          className={`flex shrink-0 flex-col items-center transition-opacity duration-500 ${contentDimClass}`}
         >
-          Target Code:{" "}
-          <span className="font-mono text-white">{puzzle.code}</span>
-        </p>
+          <p className="mt-3 text-center text-xs tracking-wider text-white/70 md:mt-6 md:text-sm">
+            {isViewingSolve
+              ? "Your solution — mirrors locked."
+              : "Click empty cells to place mirrors. Click again to rotate or remove."}
+          </p>
 
-        <Board
-          puzzle={puzzle}
-          board={board}
-          laserResult={laserResult}
-          collectedNumberKeys={collectedKeys}
-          incorrectNumberKeys={incorrectKeys}
-          isFlagIncorrect={isFlagIncorrect}
-          onCellClick={handleCellClick}
-          disabled={interactionsDisabled}
-          showVictoryLaser={showVictoryLaser}
-        />
-
-        <p className="mt-6 text-center text-sm tracking-wider text-white/70">
-          {isViewingSolve
-            ? "Your solution — mirrors locked."
-            : "Click empty cells to place mirrors. Click again to rotate or remove."}
-        </p>
-
-        {!isViewingSolve && (
-          <WarningBanner message={validation.warningMessage} inline />
-        )}
+          {!isViewingSolve && (
+            <WarningBanner message={validation.warningMessage} inline />
+          )}
+        </div>
       </div>
 
       <HowToPlayModal

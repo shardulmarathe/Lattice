@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { getOgImageUrl, getSiteUrl, ogImageDimensions, siteConfig } from "@/lib/site";
@@ -44,6 +44,11 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [ogImageUrl],
   },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

@@ -31,14 +31,21 @@ interface BoardProps {
   onCellClick: (x: number, y: number) => void;
   disabled?: boolean;
   showVictoryLaser?: boolean;
+  maxBoardHeight?: number;
 }
 
-function computeCellSize(gridSize: number): number {
+function computeCellSize(gridSize: number, maxBoardHeight?: number): number {
   if (typeof window === "undefined") return 56;
 
   const maxBoardWidth = Math.min(window.innerWidth - 48, 640);
-  const size = Math.floor(maxBoardWidth / gridSize);
-  return Math.max(40, Math.min(72, size));
+  const widthBased = Math.floor(maxBoardWidth / gridSize);
+
+  let heightBased = 72;
+  if (maxBoardHeight && maxBoardHeight > 0) {
+    heightBased = Math.floor(maxBoardHeight / gridSize);
+  }
+
+  return Math.max(40, Math.min(72, widthBased, heightBased));
 }
 
 export default function Board({
@@ -51,17 +58,21 @@ export default function Board({
   onCellClick,
   disabled = false,
   showVictoryLaser = false,
+  maxBoardHeight,
 }: BoardProps) {
-  const [cellSize, setCellSize] = useState(() => computeCellSize(puzzle.gridSize));
+  const [cellSize, setCellSize] = useState(() =>
+    computeCellSize(puzzle.gridSize, maxBoardHeight)
+  );
 
   useEffect(() => {
     const updateSize = () => {
-      setCellSize(computeCellSize(puzzle.gridSize));
+      setCellSize(computeCellSize(puzzle.gridSize, maxBoardHeight));
     };
 
+    updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, [puzzle.gridSize]);
+  }, [puzzle.gridSize, maxBoardHeight]);
 
   const boardSize = puzzle.gridSize * cellSize;
   const mirrorContacts = useMemo(

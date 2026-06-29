@@ -13,7 +13,7 @@ const warningClass =
 export default function WarningBanner({ message, inline = false }: WarningBannerProps) {
   if (inline) {
     return (
-      <div className="relative h-12 w-full max-w-lg md:h-[3.75rem]">
+      <div className="relative h-10 w-full max-w-lg md:h-[3.75rem]">
         <AnimatePresence>
           {message && (
             <motion.p

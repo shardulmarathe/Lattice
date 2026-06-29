@@ -27,6 +27,7 @@ body {
   background: #000000;
   color: #ffffff;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 
@@ -99,6 +100,28 @@ body {
 
 .animate-code-solved-glow {
   animation: code-solved-glow 2s ease-in-out infinite;
+}
+
+@keyframes code-hero-glow {
+  0%,
+  100% {
+    color: #ff3b1f;
+    text-shadow:
+      0 0 20px rgba(255, 59, 31, 0.9),
+      0 0 40px rgba(255, 59, 31, 0.55),
+      0 0 72px rgba(255, 45, 45, 0.35);
+  }
+  50% {
+    color: #ff3b1f;
+    text-shadow:
+      0 0 28px rgba(255, 59, 31, 1),
+      0 0 56px rgba(255, 59, 31, 0.75),
+      0 0 96px rgba(255, 45, 45, 0.45);
+  }
+}
+
+.animate-code-hero-glow {
+  animation: code-hero-glow 2s ease-in-out infinite;
 }
 
 @keyframes warning-flash-glow {

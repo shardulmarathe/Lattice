@@ -25,7 +25,7 @@ export default function Header({
   disabled = false,
 }: HeaderProps) {
   return (
-    <header className="flex w-full items-center justify-between px-4 pb-3 pt-6 md:px-6 md:pt-7">
+    <header className="flex w-full shrink-0 items-center justify-between px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6">
       <div className="flex gap-2 md:gap-3">
         <button onClick={onHome} className={navButtonClass}>
           HOME
