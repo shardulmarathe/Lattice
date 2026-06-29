@@ -48,7 +48,7 @@ export function getNumberTileStates(
   targetCode: string,
   board: { type: string; number?: number }[][],
   visitedCells: { x: number; y: number }[]
-): { collectedKeys: Set<string>; incorrectKeys: Set<string> } {
+): { collectedKeys: Set<string>; incorrectKeys: Set<string>; correctPrefixLength: number } {
   const targetDigits = targetCode.split("").map(Number);
   const collectedKeys = new Set<string>();
   const incorrectKeys = new Set<string>();
@@ -72,5 +72,5 @@ export function getNumberTileStates(
     }
   }
 
-  return { collectedKeys, incorrectKeys };
+  return { collectedKeys, incorrectKeys, correctPrefixLength: matchIndex };
 }

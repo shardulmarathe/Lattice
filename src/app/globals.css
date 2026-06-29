@@ -4,6 +4,7 @@
   --background: #000000;
   --foreground: #ffffff;
   --laser: #ff2d2d;
+  --target-code-red: #ff3b1f;
   --warning: #ff4444;
   --grid-line: #222222;
 }
@@ -95,11 +96,33 @@ body {
 }
 
 .animate-code-label-glow {
-  animation: code-label-glow 2.5s ease-in-out infinite;
+  animation: code-label-glow 2s ease-in-out infinite;
 }
 
 .animate-code-solved-glow {
   animation: code-solved-glow 2s ease-in-out infinite;
+}
+
+.target-code-digits {
+  font-variant-numeric: tabular-nums;
+}
+
+.target-code-digits > span {
+  transition: color 500ms ease, text-shadow 500ms ease;
+}
+
+.target-code-digits > span.target-code-digit-pending {
+  color: var(--target-code-red);
+  text-shadow:
+    0 0 14px rgba(255, 59, 31, 0.55),
+    0 0 28px rgba(255, 45, 45, 0.3);
+}
+
+.target-code-digits > span.target-code-digit-collected {
+  color: #ffffff;
+  text-shadow:
+    0 0 12px rgba(255, 255, 255, 0.55),
+    0 0 24px rgba(255, 255, 255, 0.28);
 }
 
 @keyframes code-hero-glow {

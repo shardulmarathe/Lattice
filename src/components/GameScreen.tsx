@@ -190,7 +190,7 @@ export default function GameScreen() {
     [puzzle, mirrors]
   );
 
-  const { collectedKeys, incorrectKeys } = useMemo(
+  const { collectedKeys, incorrectKeys, correctPrefixLength } = useMemo(
     () =>
       getNumberTileStates(puzzle.code, board, laserResult.visitedCells),
     [puzzle.code, board, laserResult.visitedCells]
@@ -335,6 +335,7 @@ export default function GameScreen() {
           <TargetCodeIntro
             code={puzzle.code}
             isComplete={isComplete}
+            collectedDigitCount={correctPrefixLength}
             playIntro={shouldPlayCodeIntro}
             introPaused={showHowToPlay}
             onIntroComplete={handleCodeIntroComplete}
