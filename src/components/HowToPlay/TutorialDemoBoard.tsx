@@ -15,6 +15,7 @@ interface TutorialDemoBoardProps {
   puzzle: Puzzle;
   mirrors: MirrorPlacement[];
   collectedNumbers: Set<number>;
+  incorrectNumbers: Set<number>;
   showVictoryLaser: boolean;
   drawProgress: number;
 }
@@ -23,6 +24,7 @@ export default function TutorialDemoBoard({
   puzzle,
   mirrors,
   collectedNumbers,
+  incorrectNumbers,
   showVictoryLaser,
   drawProgress,
 }: TutorialDemoBoardProps) {
@@ -69,7 +71,7 @@ export default function TutorialDemoBoard({
                     value={cell.number}
                     size={cellSize}
                     isCollected={collectedNumbers.has(cell.number)}
-                    isIncorrect={false}
+                    isIncorrect={incorrectNumbers.has(cell.number)}
                   />
               )}
 

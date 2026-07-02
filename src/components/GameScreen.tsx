@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
+import { isPuzzleUnlocked } from "@/lib/archive";
 import {
   buildBoard,
   calculateLaserPath,
@@ -12,8 +13,10 @@ import {
 } from "@/lib/laserEngine";
 import {
   createDefaultGameState,
+  isPuzzleComplete,
   loadGameState,
   saveGameState,
+  type GameMode,
   type SavedGameState,
 } from "@/lib/gameStorage";
 import type { MirrorPlacement, Puzzle } from "@/lib/puzzleTypes";
@@ -29,9 +32,14 @@ import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 
 const COMPLETION_NAV_DELAY_MS = 350;
 
-function readSavedState(puzzleId: number, devReplay: boolean): SavedGameState {
-  // Vetting only: /play?puzzle=N&replay=1 in development starts fresh. Never in production.
-  if (devReplay) {
+function readSavedState(
+  puzzleId: number,
+  mode: GameMode,
+  wantsReplay: boolean
+): SavedGameState {
+  // Practice replays and record-mode replays (dev vetting / replaying an
+  // unsolved puzzle) both start from a clean board.
+  if (mode === "practice" || wantsReplay) {
     return createDefaultGameState(puzzleId);
   }
 
@@ -39,11 +47,16 @@ function readSavedState(puzzleId: number, devReplay: boolean): SavedGameState {
 }
 
 function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
-  if (process.env.NODE_ENV === "development") {
-    const puzzleParam = searchParams.get("puzzle");
-    if (puzzleParam !== null) {
-      const id = Number(puzzleParam);
+  const puzzleParam = searchParams.get("puzzle");
+  if (puzzleParam !== null) {
+    const id = Number(puzzleParam);
+    // Dev vetting has unrestricted access. Production only unlocks puzzles
+    // scheduled on or before today, so players cannot jump to future puzzles.
+    if (process.env.NODE_ENV === "development") {
       return getPuzzleById(id) ?? PUZZLE_001;
+    }
+    if (isPuzzleUnlocked(id, new Date())) {
+      return getPuzzleById(id) ?? getPuzzleForDate(new Date()) ?? PUZZLE_001;
     }
   }
 
@@ -60,10 +73,28 @@ export default function GameScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
-  const devReplay =
-    process.env.NODE_ENV === "development" &&
-    searchParams.get("replay") === "1";
-  const [saved] = useState(() => readSavedState(puzzle.id, devReplay));
+  const wantsReplay = searchParams.get("replay") === "1";
+  // Replaying a puzzle that already has a canonical solve runs as a practice
+  // session — it never overwrites the recorded time.
+  const [mode] = useState<GameMode>(() =>
+    wantsReplay && isPuzzleComplete(puzzle.id) ? "practice" : "record"
+  );
+  const isPractice = mode === "practice";
+  const [saved] = useState(() =>
+    readSavedState(puzzle.id, mode, wantsReplay)
+  );
+
+  // Where to send the player on completion — preserve ?puzzle=N for archives,
+  // and tag practice runs so the completion screen shows only Replay.
+  const completeRoute = useMemo(() => {
+    const dailyId = getPuzzleForDate(new Date())?.id;
+    const base =
+      puzzle.id === dailyId ? "/complete" : `/complete?puzzle=${puzzle.id}`;
+    if (isPractice) {
+      return `${base}${base.includes("?") ? "&" : "?"}practice=1`;
+    }
+    return base;
+  }, [puzzle.id, isPractice]);
   const [initialComplete] = useState(
     () => saved.isComplete && !saved.isViewingSolve
   );
@@ -128,7 +159,7 @@ export default function GameScreen() {
         isPaused: overrides.isPaused ?? isPaused,
       };
 
-      saveGameState(state);
+      saveGameState(state, mode);
     },
     [
       puzzle.id,
@@ -138,6 +169,7 @@ export default function GameScreen() {
       isComplete,
       isViewingSolve,
       isPaused,
+      mode,
     ]
   );
 
@@ -152,15 +184,20 @@ export default function GameScreen() {
     setCompletionSeconds(seconds);
     markTutorialSeen();
 
-    saveGameState({
-      puzzleId: puzzle.id,
-      mirrors,
-      elapsedSeconds: seconds,
-      completionSeconds: seconds,
-      isComplete: true,
-      isViewingSolve: false,
-      isPaused,
-    });
+    // Practice solves persist only to the throwaway practice slot — the
+    // canonical record (and its shareable time) is never touched.
+    saveGameState(
+      {
+        puzzleId: puzzle.id,
+        mirrors,
+        elapsedSeconds: seconds,
+        completionSeconds: seconds,
+        isComplete: true,
+        isViewingSolve: false,
+        isPaused,
+      },
+      mode
+    );
   }, [
     validation.isComplete,
     savedComplete,
@@ -168,22 +205,25 @@ export default function GameScreen() {
     puzzle.id,
     mirrors,
     isPaused,
+    mode,
   ]);
 
   useEffect(() => {
     if (!initialComplete) return;
-    router.replace("/complete");
-  }, [initialComplete, router]);
+    router.replace(completeRoute);
+  }, [initialComplete, router, completeRoute]);
 
   useEffect(() => {
     if (!savedComplete || isViewingSolve || initialComplete) return;
 
+    // Same victory beat as the daily; practice runs land on a Replay-only
+    // completion screen (completeRoute carries practice=1).
     const navTimer = window.setTimeout(() => {
-      router.push("/complete");
+      router.push(completeRoute);
     }, COMPLETION_NAV_DELAY_MS);
 
     return () => window.clearTimeout(navTimer);
-  }, [savedComplete, isViewingSolve, initialComplete, router]);
+  }, [savedComplete, isViewingSolve, initialComplete, router, completeRoute]);
 
   const board = useMemo(
     () => buildBoard(puzzle, mirrors),

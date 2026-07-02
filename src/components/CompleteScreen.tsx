@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
+import { isPuzzleUnlocked } from "@/lib/archive";
 import { loadGameState, saveGameState } from "@/lib/gameStorage";
 import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
@@ -11,11 +12,14 @@ import { getShareText } from "@/lib/shareText";
 import { formatTime } from "@/lib/validation";
 
 function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
-  if (process.env.NODE_ENV === "development") {
-    const puzzleParam = searchParams.get("puzzle");
-    if (puzzleParam !== null) {
-      const id = Number(puzzleParam);
+  const puzzleParam = searchParams.get("puzzle");
+  if (puzzleParam !== null) {
+    const id = Number(puzzleParam);
+    if (process.env.NODE_ENV === "development") {
       return getPuzzleById(id) ?? PUZZLE_001;
+    }
+    if (isPuzzleUnlocked(id, new Date())) {
+      return getPuzzleById(id) ?? getPuzzleForDate(new Date()) ?? PUZZLE_001;
     }
   }
 
@@ -26,22 +30,36 @@ export default function CompleteScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
+  // A practice run's completion: same victory screen, but Replay-only — the
+  // recorded time (read from the record slot) is untouched and not re-shared.
+  const isPractice = searchParams.get("practice") === "1";
+
+  // The daily is a one-time solve — no replay. Only past puzzles can be replayed.
+  const isDaily = useMemo(
+    () => puzzle.id === getPuzzleForDate(new Date())?.id,
+    [puzzle.id]
+  );
+
+  // Preserve ?puzzle=N so play/replay navigation stays on the archived puzzle.
+  const playRoute = isDaily ? "/play" : `/play?puzzle=${puzzle.id}`;
+  const replayRoute = `${playRoute}${playRoute.includes("?") ? "&" : "?"}replay=1`;
+
   const [copied, setCopied] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
   const [mirrorsUsed, setMirrorsUsed] = useState(0);
 
   useEffect(() => {
-    const saved = loadGameState(puzzle.id);
+    const saved = loadGameState(puzzle.id, isPractice ? "practice" : "record");
     if (!saved?.isComplete || saved.completionSeconds === null) {
-      router.replace("/play");
+      router.replace(playRoute);
       return;
     }
 
     setTimeSeconds(saved.completionSeconds);
     setMirrorsUsed(saved.mirrors.length);
     setIsReady(true);
-  }, [puzzle.id, router]);
+  }, [puzzle.id, router, playRoute, isPractice]);
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -49,8 +67,12 @@ export default function CompleteScreen() {
 
     saveGameState({ ...saved, isViewingSolve: true });
     markTutorialSeen();
-    router.push("/play");
-  }, [puzzle.id, router]);
+    router.push(playRoute);
+  }, [puzzle.id, router, playRoute]);
+
+  const handleReplay = useCallback(() => {
+    router.push(replayRoute);
+  }, [router, replayRoute]);
 
   const handleShare = async () => {
     const text = getShareText(puzzle.id, timeSeconds, mirrorsUsed);
@@ -81,7 +103,7 @@ export default function CompleteScreen() {
 
         <div className="flex flex-col items-center gap-2">
           <span className="text-xs tracking-[0.2em] text-white/40">
-            COMPLETION TIME
+            {isPractice ? "PRACTICE TIME" : "COMPLETION TIME"}
           </span>
           <span className="font-mono text-4xl text-white md:text-5xl">
             {formatTime(timeSeconds)}
@@ -108,23 +130,38 @@ export default function CompleteScreen() {
           </svg>
         </motion.div>
 
-        <div className="mt-4 flex gap-4">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSeeSolve}
-            className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
-          >
-            SEE SOLVE
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleShare}
-            className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
-          >
-            {copied ? "COPIED!" : "SHARE"}
-          </motion.button>
+        <div className="mt-4 flex flex-wrap justify-center gap-4">
+          {/* Daily is one-time; only past puzzles show Replay. */}
+          {!isDaily && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleReplay}
+              className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+            >
+              REPLAY
+            </motion.button>
+          )}
+          {!isPractice && (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSeeSolve}
+                className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+              >
+                SEE SOLVE
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleShare}
+                className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+              >
+                {copied ? "COPIED!" : "SHARE"}
+              </motion.button>
+            </>
+          )}
         </div>
       </motion.div>
     </main>

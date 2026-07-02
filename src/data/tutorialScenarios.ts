@@ -58,7 +58,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
       numbers: [{ x: 1, y: 1, value: 5 }],
     },
     mirrors: [],
-    effectThreshold: 1,
+    effectThreshold: 0.85,
     showVictoryLaser: false,
   },
   {

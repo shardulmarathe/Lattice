@@ -50,9 +50,15 @@ export default function TutorialDemo({ scenario }: TutorialDemoProps) {
   }, [scenario.effectThreshold]);
 
   const collectedNumbers = new Set<number>();
+  const incorrectNumbers = new Set<number>();
 
   if (scenario.id === "correct-number" && showEffect) {
     collectedNumbers.add(3);
+  }
+
+  // Wrong-order number glows red, just like the live game.
+  if (scenario.id === "wrong-number" && showEffect) {
+    incorrectNumbers.add(5);
   }
 
   const showVictoryLaser =
@@ -63,6 +69,7 @@ export default function TutorialDemo({ scenario }: TutorialDemoProps) {
       puzzle={scenario.puzzle}
       mirrors={scenario.mirrors}
       collectedNumbers={collectedNumbers}
+      incorrectNumbers={incorrectNumbers}
       showVictoryLaser={showVictoryLaser}
       drawProgress={drawProgress}
     />

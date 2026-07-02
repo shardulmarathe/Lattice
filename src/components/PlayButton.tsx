@@ -16,7 +16,7 @@ const LOADING_PHASE_CAP = 0.75;
 const PROGRESS_SMOOTHING = 5;
 
 const buttonClass =
-  "relative z-10 w-48 border border-white/20 bg-black px-8 py-4 text-center text-sm tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
+  "relative z-10 w-60 whitespace-nowrap border border-white/20 bg-black px-10 py-5 text-center text-base tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
 
 function preloadGameScreen() {
   return import("@/components/GameScreen");
@@ -104,7 +104,7 @@ export default function PlayButton() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [traceProgress, setTraceProgress] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [boxSize, setBoxSize] = useState({ width: 192, height: 52 });
+  const [boxSize, setBoxSize] = useState({ width: 240, height: 64 });
   const loadCompleteTimeRef = useRef<number | null>(null);
   const progressAtLoadRef = useRef(0);
   const displayProgressRef = useRef(0);

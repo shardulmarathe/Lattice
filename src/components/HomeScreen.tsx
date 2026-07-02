@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
+import PastGamesModal from "./Archive/PastGamesModal";
 import PlayButton from "./PlayButton";
 
 const buttonClass =
-  "relative z-20 w-48 border border-white/20 bg-black px-8 py-4 text-center text-sm tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
+  "relative z-20 w-60 whitespace-nowrap border border-white/20 bg-black px-10 py-5 text-center text-base tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
 
 export default function HomeScreen() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isOverButtons, setIsOverButtons] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showPastGames, setShowPastGames] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -35,7 +37,7 @@ export default function HomeScreen() {
         className="relative z-10 flex flex-col items-center gap-12"
       >
         <motion.h1
-          className="text-6xl font-light tracking-[0.4em] text-white -mr-[0.4em] md:text-8xl"
+          className="text-7xl font-light tracking-[0.4em] text-white -mr-[0.4em] md:text-9xl"
           initial={false}
           animate={mounted ? { opacity: 1 } : false}
           transition={{ duration: 1.2, ease: "easeOut" }}
@@ -54,10 +56,20 @@ export default function HomeScreen() {
             type="button"
             whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => setShowPastGames(true)}
+            className={buttonClass}
+          >
+            PAST GAMES
+          </motion.button>
+
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowHowToPlay(true)}
             className={buttonClass}
           >
-            HOW TO PLAY
+            RULES
           </motion.button>
 
           <motion.a
@@ -76,6 +88,11 @@ export default function HomeScreen() {
       <HowToPlayModal
         isOpen={showHowToPlay}
         onClose={() => setShowHowToPlay(false)}
+      />
+
+      <PastGamesModal
+        isOpen={showPastGames}
+        onClose={() => setShowPastGames(false)}
       />
     </main>
   );
