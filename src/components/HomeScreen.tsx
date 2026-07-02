@@ -9,7 +9,7 @@ import PastGamesModal from "./Archive/PastGamesModal";
 import PlayButton from "./PlayButton";
 
 const buttonClass =
-  "relative z-20 w-60 whitespace-nowrap border border-white/20 bg-black px-10 py-5 text-center text-base tracking-[0.3em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.3em]";
+  "relative z-20 w-[min(85vw,14rem)] whitespace-nowrap border border-white/20 bg-black px-9 py-[0.9rem] text-center text-[clamp(0.8rem,3.4vw,0.95rem)] tracking-[0.28em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.28em]";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -27,17 +27,17 @@ export default function HomeScreen() {
   }, [router]);
 
   return (
-    <main className="relative grid min-h-screen w-full place-items-center bg-black px-6">
+    <main className="relative flex min-h-[100dvh] w-full items-center justify-center bg-black px-6 py-10">
       <CursorLaserTrail suppressTrail={isOverButtons} />
 
       <motion.div
         initial={false}
         animate={mounted ? { opacity: 1, y: 0 } : false}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 flex flex-col items-center gap-12"
+        className="relative z-10 flex flex-col items-center gap-[clamp(2rem,6vh,3.5rem)]"
       >
         <motion.h1
-          className="text-7xl font-light tracking-[0.4em] text-white -mr-[0.4em] md:text-9xl"
+          className="text-[clamp(2.5rem,min(11vw,13vh),6.5rem)] font-light tracking-[0.3em] text-white -mr-[0.3em] md:tracking-[0.4em] md:-mr-[0.4em]"
           initial={false}
           animate={mounted ? { opacity: 1 } : false}
           transition={{ duration: 1.2, ease: "easeOut" }}
@@ -46,7 +46,7 @@ export default function HomeScreen() {
         </motion.h1>
 
         <div
-          className="relative isolate z-20 flex cursor-none flex-col items-center gap-4"
+          className="relative isolate z-20 flex cursor-none flex-col items-center gap-[clamp(0.75rem,1.6vh,1rem)]"
           onMouseEnter={() => setIsOverButtons(true)}
           onMouseLeave={() => setIsOverButtons(false)}
         >

@@ -90,14 +90,14 @@ export default function CompleteScreen() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-black px-4 py-8">
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex flex-col items-center gap-6 border border-white/10 bg-black px-12 py-10"
+        className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-6 py-8 sm:px-12 sm:py-10"
       >
-        <h2 className="text-2xl tracking-[0.3em] text-white md:text-3xl">
+        <h2 className="text-[clamp(1.35rem,6.5vw,1.875rem)] tracking-[0.3em] text-white">
           LATTICE #{puzzle.id.toString().padStart(3, "0")}
         </h2>
 
