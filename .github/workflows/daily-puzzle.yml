@@ -1,0 +1,58 @@
+name: Daily puzzle generation
+
+# Tops up a rolling buffer of scheduled daily puzzles and commits them.
+# Vercel then auto-deploys on the push to master.
+
+on:
+  schedule:
+    # ~06:00 UTC daily — well before any player's next local midnight given the buffer.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Buffer horizon in days ahead of today"
+        required: false
+        default: "7"
+
+# Allow the workflow to push the generated puzzle commit.
+permissions:
+  contents: write
+
+# Never run two generation jobs at once (they'd race on the schedule files).
+concurrency:
+  group: daily-puzzle
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate daily puzzles
+        run: npm run puzzles:generate -- --days=${{ github.event.inputs.days || '7' }}
+
+      - name: Build (final gate)
+        run: npm run build
+
+      - name: Commit and push if changed
+        run: |
+          git add src/data content
+          if git diff --cached --quiet; then
+            echo "No new puzzles — buffer already covered. Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Add auto-generated daily puzzles (buffer top-up)"
+          git push

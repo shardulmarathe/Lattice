@@ -14,6 +14,9 @@ const MIN_EMPHASIS_RATIO = 1.15;
 const FIT_SAFETY_MARGIN = 0.9;
 const HERO_HEIGHT_RATIO = 0.32;
 const MOBILE_WIDTH_BREAKPOINT = 480;
+// Max time any single intro phase may stall before we force-complete the intro.
+// Comfortably longer than the normal hero-hold + fly durations.
+const INTRO_WATCHDOG_MS = 4500;
 
 type IntroPhase = "waiting" | "hero" | "settling" | "done";
 
@@ -178,10 +181,10 @@ export default function TargetCodeIntro({
   const [introMetrics, setIntroMetrics] = useState<IntroMetrics | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const updateIntroMetrics = useCallback(() => {
+  const updateIntroMetrics = useCallback((): boolean => {
     const measureEl = measureRef.current;
     const restLabelEl = restRef.current?.firstElementChild as HTMLElement | null;
-    if (!measureEl || !restLabelEl) return;
+    if (!measureEl || !restLabelEl) return false;
 
     const naturalWidth = measureEl.scrollWidth;
     const naturalHeight = measureEl.scrollHeight;
@@ -192,7 +195,7 @@ export default function TargetCodeIntro({
       restFontSize
     );
 
-    if (naturalWidth <= 0 || restFontSize <= 0) return;
+    if (naturalWidth <= 0 || restFontSize <= 0) return false;
 
     const { width, height } = getViewportSize();
     const heroFontSize = computeHeroFontSize(
@@ -210,6 +213,7 @@ export default function TargetCodeIntro({
       heroFontSize,
       heroLineHeightPx: heroFontSize * lineHeightRatio,
     });
+    return true;
   }, []);
 
   useEffect(() => {
@@ -221,6 +225,16 @@ export default function TargetCodeIntro({
     finishedRef.current = true;
     onIntroComplete();
   }, [onIntroComplete]);
+
+  // Safety net: if a measurement/layout/font race stalls a phase (e.g. the fly
+  // metrics never compute, so the settling animation's onAnimationComplete never
+  // fires), force the intro to finish so the board can never stay locked/blank.
+  useEffect(() => {
+    if (!playIntro || prefersReducedMotion || introPaused) return;
+    if (phase === "done") return;
+    const watchdog = window.setTimeout(finishIntro, INTRO_WATCHDOG_MS);
+    return () => window.clearTimeout(watchdog);
+  }, [playIntro, prefersReducedMotion, introPaused, phase, finishIntro]);
 
   useEffect(() => {
     if (!playIntro) {
@@ -264,7 +278,14 @@ export default function TargetCodeIntro({
       setIntroMetrics(null);
       return;
     }
-    updateIntroMetrics();
+    // Measurement can be 0 for a frame or two (fonts/layout not settled); retry
+    // on the next frame until it succeeds so the fly animation always plays.
+    let raf = 0;
+    const tryMeasure = () => {
+      if (!updateIntroMetrics()) raf = requestAnimationFrame(tryMeasure);
+    };
+    tryMeasure();
+    return () => cancelAnimationFrame(raf);
   }, [phase, code, updateIntroMetrics]);
 
   useEffect(() => {
