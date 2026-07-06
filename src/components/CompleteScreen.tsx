@@ -90,7 +90,7 @@ export default function CompleteScreen() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-black px-4 py-8">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(2rem,env(safe-area-inset-bottom))]">
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

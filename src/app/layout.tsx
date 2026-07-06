@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { getOgImageUrl, getSiteUrl, ogImageDimensions, siteConfig } from "@/lib/site";
+import { getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = getSiteUrl();
-const ogImageUrl = getOgImageUrl();
 
+// og:image / twitter:image are injected automatically by the coded
+// opengraph-image.tsx / twitter-image.tsx routes — no static PNG to maintain.
 export const metadata: Metadata = {
   title: siteConfig.title,
   description: siteConfig.description,
@@ -28,25 +29,17 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     type: "website",
     locale: "en_US",
-    images: [
-      {
-        url: ogImageUrl,
-        width: ogImageDimensions.width,
-        height: ogImageDimensions.height,
-        alt: "Lattice — A laser reflection puzzle game.",
-        type: "image/png",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [ogImageUrl],
   },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   viewportFit: "cover",
   themeColor: "#000000",
 };

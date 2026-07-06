@@ -332,19 +332,25 @@ export default function GameScreen() {
     isPaused && !isComplete && !gameplayLocked;
 
   const boardSlotRef = useRef<HTMLDivElement>(null);
-  const [boardSlotHeight, setBoardSlotHeight] = useState<number | undefined>();
+  const [boardSlotSize, setBoardSlotSize] = useState<{
+    width?: number;
+    height?: number;
+  }>({});
 
   useEffect(() => {
     const slot = boardSlotRef.current;
     if (!slot) return;
 
-    const updateHeight = () => {
-      setBoardSlotHeight(slot.clientHeight);
+    const updateSize = () => {
+      setBoardSlotSize({
+        width: slot.clientWidth,
+        height: slot.clientHeight,
+      });
     };
 
-    updateHeight();
+    updateSize();
 
-    const observer = new ResizeObserver(updateHeight);
+    const observer = new ResizeObserver(updateSize);
     observer.observe(slot);
 
     return () => observer.disconnect();
@@ -395,7 +401,8 @@ export default function GameScreen() {
               onCellClick={handleCellClick}
               disabled={interactionsDisabled}
               showVictoryLaser={showVictoryLaser}
-              maxBoardHeight={boardSlotHeight}
+              maxBoardWidth={boardSlotSize.width}
+              maxBoardHeight={boardSlotSize.height}
             />
           </div>
         </div>

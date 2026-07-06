@@ -31,21 +31,41 @@ interface BoardProps {
   onCellClick: (x: number, y: number) => void;
   disabled?: boolean;
   showVictoryLaser?: boolean;
+  maxBoardWidth?: number;
   maxBoardHeight?: number;
 }
 
-function computeCellSize(gridSize: number, maxBoardHeight?: number): number {
+// The largest a cell should ever grow on a spacious desktop viewport. Below
+// this we let cells shrink to whatever it takes to keep the whole board on
+// screen — fitting the viewport always wins over a fixed minimum cell size,
+// otherwise large grids overflow narrow phones.
+const MAX_CELL_SIZE = 72;
+
+function computeCellSize(
+  gridSize: number,
+  maxBoardWidth?: number,
+  maxBoardHeight?: number
+): number {
   if (typeof window === "undefined") return 56;
 
-  const maxBoardWidth = Math.min(window.innerWidth - 48, 640);
-  const widthBased = Math.floor(maxBoardWidth / gridSize);
+  // Fall back to a viewport-derived budget until the container has been
+  // measured, so the first paint is already close to the final size.
+  const widthBudget =
+    maxBoardWidth && maxBoardWidth > 0
+      ? maxBoardWidth
+      : Math.max(0, window.innerWidth - 32);
+  const heightBudget =
+    maxBoardHeight && maxBoardHeight > 0
+      ? maxBoardHeight
+      : window.innerHeight;
 
-  let heightBased = 72;
-  if (maxBoardHeight && maxBoardHeight > 0) {
-    heightBased = Math.floor(maxBoardHeight / gridSize);
-  }
+  const widthBased = Math.floor(widthBudget / gridSize);
+  const heightBased = Math.floor(heightBudget / gridSize);
 
-  return Math.max(40, Math.min(72, widthBased, heightBased));
+  // Never exceed the measured budget on either axis — that guarantees the
+  // board fits with no overflow/clipping. Clamp to a sane minimum only to
+  // avoid a zero-size board before measurement lands.
+  return Math.max(12, Math.min(MAX_CELL_SIZE, widthBased, heightBased));
 }
 
 export default function Board({
@@ -58,21 +78,24 @@ export default function Board({
   onCellClick,
   disabled = false,
   showVictoryLaser = false,
+  maxBoardWidth,
   maxBoardHeight,
 }: BoardProps) {
   const [cellSize, setCellSize] = useState(() =>
-    computeCellSize(puzzle.gridSize, maxBoardHeight)
+    computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight)
   );
 
   useEffect(() => {
     const updateSize = () => {
-      setCellSize(computeCellSize(puzzle.gridSize, maxBoardHeight));
+      setCellSize(
+        computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight)
+      );
     };
 
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, [puzzle.gridSize, maxBoardHeight]);
+  }, [puzzle.gridSize, maxBoardWidth, maxBoardHeight]);
 
   const boardSize = puzzle.gridSize * cellSize;
   const mirrorContacts = useMemo(

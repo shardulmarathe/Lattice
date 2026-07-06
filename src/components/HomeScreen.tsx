@@ -27,7 +27,7 @@ export default function HomeScreen() {
   }, [router]);
 
   return (
-    <main className="relative flex min-h-[100dvh] w-full items-center justify-center bg-black px-6 py-10">
+    <main className="relative flex min-h-[100dvh] w-full items-center justify-center bg-black px-[max(1.5rem,env(safe-area-inset-left))] py-[max(2.5rem,env(safe-area-inset-bottom))]">
       <CursorLaserTrail suppressTrail={isOverButtons} />
 
       <motion.div
@@ -37,7 +37,7 @@ export default function HomeScreen() {
         className="relative z-10 flex flex-col items-center gap-[clamp(2rem,6vh,3.5rem)]"
       >
         <motion.h1
-          className="text-[clamp(2.5rem,min(11vw,13vh),6.5rem)] font-light tracking-[0.3em] text-white -mr-[0.3em] md:tracking-[0.4em] md:-mr-[0.4em]"
+          className="max-w-full text-[clamp(2rem,min(9vw,13vh),6.5rem)] font-light tracking-[0.16em] text-white -mr-[0.16em] sm:tracking-[0.3em] sm:-mr-[0.3em] md:tracking-[0.4em] md:-mr-[0.4em]"
           initial={false}
           animate={mounted ? { opacity: 1 } : false}
           transition={{ duration: 1.2, ease: "easeOut" }}
