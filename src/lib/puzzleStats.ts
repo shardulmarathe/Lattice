@@ -1,4 +1,5 @@
 import puzzleStatsData from "@/data/puzzleStats.json";
+import { FASTEST_TIMES } from "@/data/fastestTimes";
 import type { Puzzle } from "@/lib/puzzleTypes";
 
 /**
@@ -41,8 +42,15 @@ const PAR_PER_CELL = 1.5;
 const PAR_PER_DIGIT = 6;
 const PAR_PER_MIRROR = 3;
 
-/** Heuristic target time (seconds) for a puzzle, rounded to a clean 5s. */
+/**
+ * Target time (seconds) for a puzzle used by Speed Efficiency. Prefers a curated
+ * fastest time when one exists, otherwise falls back to a difficulty heuristic
+ * (rounded to a clean 5s).
+ */
 export function getParSeconds(puzzle: Puzzle): number {
+  const curated = FASTEST_TIMES[puzzle.id];
+  if (curated !== undefined) return curated;
+
   const { minMirrors, minMirrorsAtLeast } = getPuzzleStats(puzzle.id);
   const mirrorRef = minMirrors ?? minMirrorsAtLeast ?? puzzle.gridSize;
   const raw =
