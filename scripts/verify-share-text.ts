@@ -104,21 +104,34 @@ function verifyPuzzle(puzzle: Puzzle): string[] {
     }
   }
 
-  const share = getShareText(puzzle.id, 90, 3);
-  if (!share.startsWith(`Lattice #${puzzle.id}`)) {
-    issues.push("share text missing header");
+  // Fixed-size share text: 5 lines, no emoji grid.
+  const share = getShareText(puzzle.id, 90, 3, 1);
+  const lines = share.split("\n");
+  const paddedId = String(puzzle.id).padStart(3, "0");
+
+  if (lines.length !== 5) {
+    issues.push(`share text expected 5 lines, got ${lines.length}`);
   }
-  if (!share.includes("Time: 01:30")) {
-    issues.push("share text missing time");
+  if (lines[0] !== `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`) {
+    issues.push(`share text header wrong: ${JSON.stringify(lines[0])}`);
   }
-  if (!share.includes("Mirrors Used: 3")) {
-    issues.push("share text missing mirrors line");
+  if (lines[1] !== "01:30") {
+    issues.push(`share text time wrong: ${JSON.stringify(lines[1])}`);
   }
-  if (!share.includes(productionSiteUrl)) {
-    issues.push("share text missing url");
+  if (!lines[2]?.startsWith("3 mirror")) {
+    issues.push(`share text mirror line wrong: ${JSON.stringify(lines[2])}`);
   }
-  if (!share.includes(gridStr)) {
-    issues.push("share text missing emoji grid");
+  if (lines[3] !== "1 misroute") {
+    issues.push(`share text misroute line wrong: ${JSON.stringify(lines[3])}`);
+  }
+  if (lines[4] !== productionSiteUrl) {
+    issues.push(`share text url wrong: ${JSON.stringify(lines[4])}`);
+  }
+  for (const emoji of [CELL_EMPTY, CELL_OBSTACLE, CELL_SOURCE, CELL_FLAG]) {
+    if (share.includes(emoji)) {
+      issues.push("share text should not contain the emoji grid");
+      break;
+    }
   }
 
   return issues;

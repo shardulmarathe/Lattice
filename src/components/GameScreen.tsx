@@ -100,6 +100,7 @@ export default function GameScreen() {
   );
 
   const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
+  const [wrongNumberHits, setWrongNumberHits] = useState(saved.wrongNumberHits);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
   const isViewingSolve = saved.isViewingSolve;
   const [savedComplete, setSavedComplete] = useState(saved.isComplete);
@@ -157,6 +158,7 @@ export default function GameScreen() {
         isComplete: overrides.isComplete ?? isComplete,
         isViewingSolve: overrides.isViewingSolve ?? isViewingSolve,
         isPaused: overrides.isPaused ?? isPaused,
+        wrongNumberHits: overrides.wrongNumberHits ?? wrongNumberHits,
       };
 
       saveGameState(state, mode);
@@ -169,13 +171,22 @@ export default function GameScreen() {
       isComplete,
       isViewingSolve,
       isPaused,
+      wrongNumberHits,
       mode,
     ]
   );
 
   useEffect(() => {
     persistState();
-  }, [mirrors, seconds, isPaused, isViewingSolve, isComplete, persistState]);
+  }, [
+    mirrors,
+    seconds,
+    isPaused,
+    isViewingSolve,
+    isComplete,
+    wrongNumberHits,
+    persistState,
+  ]);
 
   useEffect(() => {
     if (!validation.isComplete || savedComplete) return;
@@ -195,6 +206,7 @@ export default function GameScreen() {
         isComplete: true,
         isViewingSolve: false,
         isPaused,
+        wrongNumberHits,
       },
       mode
     );
@@ -205,6 +217,7 @@ export default function GameScreen() {
     puzzle.id,
     mirrors,
     isPaused,
+    wrongNumberHits,
     mode,
   ]);
 
@@ -235,6 +248,32 @@ export default function GameScreen() {
       getNumberTileStates(puzzle.code, board, laserResult.visitedCells),
     [puzzle.code, board, laserResult.visitedCells]
   );
+
+  // Passive misroute tracking: count each number tile the laser collects out of
+  // Target Code order at most once per session. Never decrements when mirrors
+  // change — only reset on clear-board / a fresh (replay) session. Seeded on
+  // first run so a mid-solve reload doesn't recount misroutes already persisted.
+  const countedWrongKeysRef = useRef<Set<string>>(new Set());
+  const wrongInitRef = useRef(false);
+
+  useEffect(() => {
+    if (!wrongInitRef.current) {
+      wrongInitRef.current = true;
+      countedWrongKeysRef.current = new Set(incorrectKeys);
+      return;
+    }
+
+    let newlyWrong = 0;
+    for (const cellKey of incorrectKeys) {
+      if (!countedWrongKeysRef.current.has(cellKey)) {
+        countedWrongKeysRef.current.add(cellKey);
+        newlyWrong += 1;
+      }
+    }
+    if (newlyWrong > 0) {
+      setWrongNumberHits((count) => count + newlyWrong);
+    }
+  }, [incorrectKeys]);
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -267,6 +306,9 @@ export default function GameScreen() {
   const handleClearBoard = useCallback(() => {
     if (isComplete) return;
     setMirrors([]);
+    // Clearing the board resets the session misroute counter.
+    setWrongNumberHits(0);
+    countedWrongKeysRef.current = new Set();
   }, [isComplete]);
 
   const handlePause = useCallback(() => {

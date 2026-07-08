@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "puzzles:generate": "tsx scripts/puzzles/generate.ts",
-    "puzzles:calibrate": "tsx scripts/puzzles/calibrate.ts"
+    "puzzles:calibrate": "tsx scripts/puzzles/calibrate.ts",
+    "puzzles:stats": "tsx scripts/puzzles/stats.ts",
+    "verify:share": "tsx scripts/verify-share-text.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

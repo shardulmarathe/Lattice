@@ -48,6 +48,7 @@ export default function CompleteScreen() {
   const [isReady, setIsReady] = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
   const [mirrorsUsed, setMirrorsUsed] = useState(0);
+  const [wrongNumberHits, setWrongNumberHits] = useState(0);
 
   useEffect(() => {
     const saved = loadGameState(puzzle.id, isPractice ? "practice" : "record");
@@ -58,8 +59,15 @@ export default function CompleteScreen() {
 
     setTimeSeconds(saved.completionSeconds);
     setMirrorsUsed(saved.mirrors.length);
+    setWrongNumberHits(saved.wrongNumberHits);
     setIsReady(true);
   }, [puzzle.id, router, playRoute, isPractice]);
+
+  // The share preview shows exactly what the SHARE button copies.
+  const shareText = useMemo(
+    () => getShareText(puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits),
+    [puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits]
+  );
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -75,9 +83,8 @@ export default function CompleteScreen() {
   }, [router, replayRoute]);
 
   const handleShare = async () => {
-    const text = getShareText(puzzle.id, timeSeconds, mirrorsUsed);
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(shareText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -129,6 +136,12 @@ export default function CompleteScreen() {
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </motion.div>
+
+        {!isPractice && (
+          <pre className="w-full whitespace-pre-wrap break-words border border-white/10 bg-white/[0.03] px-4 py-3 text-center font-mono text-xs leading-relaxed tracking-wide text-white/50">
+            {shareText}
+          </pre>
+        )}
 
         <div className="mt-4 flex flex-wrap justify-center gap-4">
           {/* Daily is one-time; only past puzzles show Replay. */}

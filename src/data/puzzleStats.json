@@ -1,0 +1,83 @@
+{
+  "1": {
+    "minMirrorsAtLeast": 4
+  },
+  "2": {
+    "minMirrorsAtLeast": 4
+  },
+  "3": {
+    "minMirrorsAtLeast": 4
+  },
+  "4": {
+    "minMirrorsAtLeast": 6
+  },
+  "5": {
+    "minMirrorsAtLeast": 4
+  },
+  "6": {
+    "minMirrorsAtLeast": 4
+  },
+  "7": {
+    "minMirrorsAtLeast": 5
+  },
+  "8": {
+    "minMirrorsAtLeast": 4
+  },
+  "9": {
+    "minMirrorsAtLeast": 6
+  },
+  "10": {
+    "minMirrorsAtLeast": 4
+  },
+  "11": {
+    "minMirrorsAtLeast": 4
+  },
+  "12": {
+    "minMirrorsAtLeast": 5
+  },
+  "13": {
+    "minMirrorsAtLeast": 4
+  },
+  "14": {
+    "minMirrorsAtLeast": 4
+  },
+  "15": {
+    "minMirrorsAtLeast": 5
+  },
+  "16": {
+    "minMirrorsAtLeast": 4
+  },
+  "17": {
+    "minMirrorsAtLeast": 4
+  },
+  "18": {
+    "minMirrors": 4
+  },
+  "19": {
+    "minMirrorsAtLeast": 4
+  },
+  "20": {
+    "minMirrorsAtLeast": 4
+  },
+  "22": {
+    "minMirrorsAtLeast": 4
+  },
+  "23": {
+    "minMirrorsAtLeast": 7
+  },
+  "24": {
+    "minMirrorsAtLeast": 6
+  },
+  "25": {
+    "minMirrorsAtLeast": 5
+  },
+  "26": {
+    "minMirrorsAtLeast": 7
+  },
+  "27": {
+    "minMirrorsAtLeast": 4
+  },
+  "28": {
+    "minMirrorsAtLeast": 7
+  }
+}

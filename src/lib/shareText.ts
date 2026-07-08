@@ -1,5 +1,6 @@
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getPuzzleById } from "@/data/puzzles";
+import { getPuzzleStats } from "@/lib/puzzleStats";
 import { productionSiteUrl } from "@/lib/site";
 import { formatTime } from "@/lib/validation";
 
@@ -42,37 +43,52 @@ export function getSharePuzzle(puzzleId: number): Puzzle | undefined {
   return getPuzzleById(puzzleId);
 }
 
+function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+/** Line 3: mirror efficiency, shown only when the exact minimum is known. */
+function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
+  const { minMirrors } = getPuzzleStats(puzzleId);
+  const base = pluralize(mirrorsUsed, "mirror");
+
+  if (minMirrors === undefined || mirrorsUsed <= 0) {
+    return base;
+  }
+
+  const efficiency = Math.round((minMirrors / mirrorsUsed) * 100);
+  return `${base} (min ${minMirrors}) · ${efficiency}% efficient`;
+}
+
+/**
+ * Fixed-size share text (no emoji grid). When the puzzle's exact minimum mirror
+ * count is known, line 3 includes an efficiency figure; otherwise it lists the
+ * mirror count alone.
+ *
+ *   Lattice #022 · 8×8
+ *   02:14
+ *   6 mirrors (min 4) · 67% efficient
+ *   1 misroute
+ *   https://playlattice.vercel.app
+ */
 export function getShareText(
   puzzleId: number,
   timeSeconds: number,
-  mirrorsUsed: number
+  mirrorsUsed: number,
+  wrongNumberHits: number
 ): string {
   const puzzle = getSharePuzzle(puzzleId);
-  if (!puzzle) {
-    return [
-      `Lattice #${puzzleId}`,
-      "",
-      `Time: ${formatTime(timeSeconds)}`,
-      "",
-      `Mirrors Used: ${mirrorsUsed}`,
-      "",
-      productionSiteUrl,
-      "",
-    ].join("\n");
-  }
+  const paddedId = String(puzzleId).padStart(3, "0");
 
-  const grid = buildPuzzleEmojiGrid(puzzle);
+  const header = puzzle
+    ? `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`
+    : `Lattice #${paddedId}`;
 
   return [
-    `Lattice #${puzzle.id}`,
-    "",
-    grid,
-    "",
-    `Time: ${formatTime(timeSeconds)}`,
-    "",
-    `Mirrors Used: ${mirrorsUsed}`,
-    "",
+    header,
+    formatTime(timeSeconds),
+    mirrorLine(puzzleId, mirrorsUsed),
+    pluralize(wrongNumberHits, "misroute"),
     productionSiteUrl,
-    "",
   ].join("\n");
 }

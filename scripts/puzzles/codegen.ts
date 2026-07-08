@@ -77,7 +77,10 @@ export interface SolutionSidecar {
   mirrorCount: number;
   mirrorDensity: number | null;
   solverCap: number;
-  minMirrorsAtLeast: number;
+  /** Exact minimum mirror count, when a full search found one within the cap. */
+  minMirrors?: number;
+  /** Lower bound (cap + 1) when no solution was found within the cap. */
+  minMirrorsAtLeast?: number;
   pathLength: number | null;
   obstacleInterference: number;
   score: number;

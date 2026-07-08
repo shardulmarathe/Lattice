@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { PUZZLES } from "@/data/puzzles";
 import { PUZZLE_SCHEDULE } from "@/data/schedule";
 import { generatePuzzle, puzzleHash } from "./generator";
+import { grade } from "./grader";
 import {
   REPO_ROOT,
   readScheduleJson,
@@ -110,6 +111,11 @@ function main(): void {
     );
 
     if (!args.dryRun) {
+      // Full min-mirror search (default affordable cap), separate from the
+      // anti-triviality check which only searched up to solution.length - 1.
+      // Records an exact minimum when found within the cap, else a lower bound.
+      const fullGrade = grade(puzzle, { fallbackSolution: generated.solution });
+
       writeDraftFile(puzzle, dateKey, generated);
       writeSolutionSidecar({
         id,
@@ -120,8 +126,10 @@ function main(): void {
         solutionMirrors: generated.solution,
         mirrorCount: generated.solution.length,
         mirrorDensity: generated.grade.mirrorDensity,
-        solverCap: generated.grade.cap,
-        minMirrorsAtLeast: generated.grade.cap + 1,
+        solverCap: fullGrade.cap,
+        ...(fullGrade.solvableWithinCap
+          ? { minMirrors: fullGrade.minMirrors }
+          : { minMirrorsAtLeast: fullGrade.cap + 1 }),
         pathLength: generated.grade.pathLength,
         obstacleInterference: generated.grade.obstacleInterference,
         score: generated.grade.score,

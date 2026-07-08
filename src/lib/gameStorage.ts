@@ -8,6 +8,11 @@ export interface SavedGameState {
   isComplete: boolean;
   isViewingSolve: boolean;
   isPaused: boolean;
+  /**
+   * Passive stat: times the laser collected a number tile out of Target Code
+   * order this session ("misroutes"). Counting only — no effect on win/time.
+   */
+  wrongNumberHits: number;
 }
 
 /**
@@ -50,6 +55,9 @@ export function loadGameState(
       isComplete: Boolean(parsed.isComplete),
       isViewingSolve: Boolean(parsed.isViewingSolve),
       isPaused: Boolean(parsed.isPaused),
+      // Backward-compatible: old saves predate this field.
+      wrongNumberHits:
+        typeof parsed.wrongNumberHits === "number" ? parsed.wrongNumberHits : 0,
     };
   } catch {
     return null;
@@ -91,6 +99,7 @@ export function createDefaultGameState(puzzleId: number): SavedGameState {
     isComplete: false,
     isViewingSolve: false,
     isPaused: false,
+    wrongNumberHits: 0,
   };
 }
 
