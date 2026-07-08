@@ -17,3 +17,17 @@ const stats = puzzleStatsData as Record<string, PuzzleStats>;
 export function getPuzzleStats(puzzleId: number): PuzzleStats {
   return stats[String(puzzleId)] ?? {};
 }
+
+/**
+ * Mirror efficiency as a whole percentage (minMirrors / mirrorsUsed · 100), or
+ * null when the exact minimum is unknown. 100% means the solve used the fewest
+ * mirrors possible.
+ */
+export function getMirrorEfficiency(
+  puzzleId: number,
+  mirrorsUsed: number
+): number | null {
+  const { minMirrors } = getPuzzleStats(puzzleId);
+  if (minMirrors === undefined || mirrorsUsed <= 0) return null;
+  return Math.round((minMirrors / mirrorsUsed) * 100);
+}

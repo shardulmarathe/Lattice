@@ -18,7 +18,7 @@ import { join } from "node:path";
 import { PUZZLES } from "@/data/puzzles";
 import { PUZZLE_SCHEDULE } from "@/data/schedule";
 import { generatePuzzle, puzzleHash } from "./generator";
-import { grade } from "./grader";
+import { solveExactMin } from "./exactMin";
 import {
   REPO_ROOT,
   readScheduleJson,
@@ -28,6 +28,11 @@ import {
   writeScheduleModule,
   writeSolutionSidecar,
 } from "./codegen";
+
+// Exact-min budget at generation time. Kept modest so the daily cron stays
+// quick — dense "extra hard" dailies cap out to a lower bound here anyway; the
+// offline `puzzles:stats --exact` backfill can spend more to nail moderate ones.
+const EXACT_MIN_GEN_OPTIONS = { maxBudget: 16, nodeCap: 4_000_000 } as const;
 
 interface Args {
   today: string;
@@ -111,10 +116,18 @@ function main(): void {
     );
 
     if (!args.dryRun) {
-      // Full min-mirror search (default affordable cap), separate from the
-      // anti-triviality check which only searched up to solution.length - 1.
-      // Records an exact minimum when found within the cap, else a lower bound.
-      const fullGrade = grade(puzzle, { fallbackSolution: generated.solution });
+      // Exact min-mirror search (beam-guided), separate from the anti-triviality
+      // check which only searched up to solution.length - 1. Records an exact
+      // minimum when the bounded search proves one, else a lower bound. Dense
+      // "extra hard" dailies typically cap out (bound only); moderate ones solve.
+      const exact = solveExactMin(puzzle, EXACT_MIN_GEN_OPTIONS);
+      console.log(
+        `    exact min: ${
+          exact.minMirrors !== undefined
+            ? exact.minMirrors
+            : `≥${exact.minMirrorsAtLeast}`
+        } (${exact.nodes.toLocaleString()} nodes${exact.proven ? "" : ", node-capped"})`
+      );
 
       writeDraftFile(puzzle, dateKey, generated);
       writeSolutionSidecar({
@@ -126,10 +139,10 @@ function main(): void {
         solutionMirrors: generated.solution,
         mirrorCount: generated.solution.length,
         mirrorDensity: generated.grade.mirrorDensity,
-        solverCap: fullGrade.cap,
-        ...(fullGrade.solvableWithinCap
-          ? { minMirrors: fullGrade.minMirrors }
-          : { minMirrorsAtLeast: fullGrade.cap + 1 }),
+        solverCap: generated.grade.cap,
+        ...(exact.minMirrors !== undefined
+          ? { minMirrors: exact.minMirrors }
+          : { minMirrorsAtLeast: exact.minMirrorsAtLeast! }),
         pathLength: generated.grade.pathLength,
         obstacleInterference: generated.grade.obstacleInterference,
         score: generated.grade.score,

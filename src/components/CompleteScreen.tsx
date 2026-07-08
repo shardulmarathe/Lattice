@@ -9,7 +9,41 @@ import { loadGameState, saveGameState } from "@/lib/gameStorage";
 import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
+import { getMirrorEfficiency, getPuzzleStats } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
+
+const ACCENT = "#FF2D2D";
+
+function StatTile({
+  label,
+  value,
+  detail,
+  accentValue = false,
+}: {
+  label: string;
+  value: string | number;
+  detail?: string | null;
+  accentValue?: boolean;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-1.5 border border-white/10 px-3 py-4">
+      <span className="text-[0.6rem] tracking-[0.25em] text-white/40">
+        {label}
+      </span>
+      <span
+        className="font-mono text-3xl leading-none"
+        style={{ color: accentValue ? ACCENT : "#ffffff" }}
+      >
+        {value}
+      </span>
+      {detail && (
+        <span className="text-center text-[0.62rem] leading-tight tracking-wide text-white/45">
+          {detail}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
   const puzzleParam = searchParams.get("puzzle");
@@ -63,11 +97,19 @@ export default function CompleteScreen() {
     setIsReady(true);
   }, [puzzle.id, router, playRoute, isPractice]);
 
-  // The share preview shows exactly what the SHARE button copies.
+  // Text the SHARE button copies to the clipboard (revealed only when pasted).
   const shareText = useMemo(
     () => getShareText(puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits),
     [puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits]
   );
+
+  const efficiency = getMirrorEfficiency(puzzle.id, mirrorsUsed);
+  const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
+  const mirrorDetail =
+    efficiency !== null
+      ? `min ${minMirrors} · ${efficiency}% efficient`
+      : null;
+  const misrouteDetail = wrongNumberHits === 0 ? "clean run" : null;
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -137,11 +179,20 @@ export default function CompleteScreen() {
           </svg>
         </motion.div>
 
-        {!isPractice && (
-          <pre className="w-full whitespace-pre-wrap break-words border border-white/10 bg-white/[0.03] px-4 py-3 text-center font-mono text-xs leading-relaxed tracking-wide text-white/50">
-            {shareText}
-          </pre>
-        )}
+        <div className="flex w-full gap-3">
+          <StatTile
+            label="MIRRORS"
+            value={mirrorsUsed}
+            detail={mirrorDetail}
+            accentValue={efficiency === 100}
+          />
+          <StatTile
+            label="MISROUTES"
+            value={wrongNumberHits}
+            detail={misrouteDetail}
+            accentValue={wrongNumberHits > 0}
+          />
+        </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-4">
           {/* Daily is one-time; only past puzzles show Replay. */}

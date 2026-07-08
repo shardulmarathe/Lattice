@@ -1,6 +1,6 @@
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getPuzzleById } from "@/data/puzzles";
-import { getPuzzleStats } from "@/lib/puzzleStats";
+import { getMirrorEfficiency, getPuzzleStats } from "@/lib/puzzleStats";
 import { productionSiteUrl } from "@/lib/site";
 import { formatTime } from "@/lib/validation";
 
@@ -49,14 +49,11 @@ function pluralize(count: number, noun: string): string {
 
 /** Line 3: mirror efficiency, shown only when the exact minimum is known. */
 function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
-  const { minMirrors } = getPuzzleStats(puzzleId);
   const base = pluralize(mirrorsUsed, "mirror");
+  const efficiency = getMirrorEfficiency(puzzleId, mirrorsUsed);
+  if (efficiency === null) return base;
 
-  if (minMirrors === undefined || mirrorsUsed <= 0) {
-    return base;
-  }
-
-  const efficiency = Math.round((minMirrors / mirrorsUsed) * 100);
+  const { minMirrors } = getPuzzleStats(puzzleId);
   return `${base} (min ${minMirrors}) · ${efficiency}% efficient`;
 }
 
