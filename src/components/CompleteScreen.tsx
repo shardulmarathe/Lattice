@@ -33,20 +33,21 @@ function StatTile({
   big?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 border border-white/10 px-3 py-4">
+    <div className="flex flex-col items-center border border-white/10 px-3 py-4">
       <span className="flex min-h-[2.2em] items-center justify-center text-center text-[0.72rem] font-medium leading-tight tracking-[0.14em] text-white/45">
         {label}
       </span>
       <span
-        className={`font-mono leading-none ${big ? "text-[2.6rem]" : "text-3xl"}`}
+        className={`flex flex-1 items-center justify-center font-mono leading-none ${big ? "text-[2.6rem]" : "text-3xl"}`}
         style={{ color: accentValue ? ACCENT : "#ffffff" }}
       >
         {value}
       </span>
-      {/* Always render the caption row so every tile is the same height. */}
+      {detail && (
       <span className="text-center text-[0.72rem] leading-tight tracking-wide text-white/50">
         {detail ?? " "}
       </span>
+      )}
     </div>
   );
 }
