@@ -1,0 +1,62 @@
+name: Solve puzzle min-mirrors
+
+# Time-boxed, resumable worker that computes each puzzle's EXACT minimum mirror
+# count and commits it into src/data/puzzleStats.json (Vercel auto-deploys on the
+# push). Ordered by soonest play date so upcoming dailies are solved before they
+# go live. Hard puzzles resume across nights via content/min-progress.json until
+# solved; genuinely intractable ones keep their best proven lower bound.
+
+on:
+  schedule:
+    # ~07:00 UTC daily — an hour after generation, so it also picks up new puzzles.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Wall-clock budget for the run (minutes)"
+        required: false
+        default: "300"
+
+# Allow the workflow to push the updated stats commit.
+permissions:
+  contents: write
+
+# Never run two solve jobs at once (they'd race on the stats/progress files).
+concurrency:
+  group: solve-min-mirrors
+  cancel-in-progress: false
+
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    # Stay under GitHub's 6h hard cap, with margin for checkout / install / commit.
+    timeout-minutes: 350
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Solve exact min-mirrors (time-boxed, resumable)
+        run: npm run puzzles:solve-min -- --minutes=${{ github.event.inputs.minutes || '300' }}
+
+      - name: Commit and push if changed
+        run: |
+          git add src/data/puzzleStats.json content/min-progress.json
+          if git diff --cached --quiet; then
+            echo "No min-mirror changes this run. Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update exact min-mirrors (solver progress)"
+          # Reconcile with any generation push that landed in the meantime.
+          git pull --rebase origin ${GITHUB_REF_NAME}
+          git push

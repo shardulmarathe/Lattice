@@ -1,0 +1,22 @@
+{
+  "17": {
+    "solved": false,
+    "provenNoSolutionUpTo": 13
+  },
+  "23": {
+    "solved": true,
+    "minMirrors": 7
+  },
+  "24": {
+    "solved": true,
+    "minMirrors": 7
+  },
+  "26": {
+    "solved": true,
+    "minMirrors": 9
+  },
+  "28": {
+    "solved": true,
+    "minMirrors": 7
+  }
+}

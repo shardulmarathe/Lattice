@@ -10,8 +10,13 @@
  * never contains an off-path mirror, so restricting placements to cells the beam
  * actually visits is complete.
  *
- * It is exponential in the worst case, so both a mirror budget and a node cap
- * bound the run. On a cap-out it still returns the strongest lower bound it fully
+ * It is exponential in the worst case, so the search is bounded three ways, any
+ * of which can stop it: a mirror-budget ceiling (`maxBudget`), a wall-clock
+ * deadline (`deadlineMs`), and an optional node cap (`nodeCap`). Because the
+ * outer loop deepens by whole budget levels, a run is RESUMABLE at budget
+ * granularity — pass `startBudget = provenNoSolutionUpTo + 1` from a prior run to
+ * skip levels already proven empty, so nightly jobs accumulate progress instead
+ * of restarting. On any early stop it returns the strongest lower bound it fully
  * proved (highest budget searched to exhaustion, + 1).
  */
 
@@ -31,21 +36,32 @@ export interface ExactMinResult {
   minMirrorsAtLeast?: number;
   /** A witnessing solution for `minMirrors`. */
   solution?: MirrorPlacement[];
-  /** Nodes (beam simulations) explored. */
+  /** Nodes (beam simulations) explored this call. */
   nodes: number;
-  /** False when the node cap cut the search short (result is a bound, not proof). */
+  /**
+   * Highest mirror budget searched to full exhaustion with no solution. The next
+   * run should resume at `provenNoSolutionUpTo + 1`.
+   */
+  provenNoSolutionUpTo: number;
+  /** True when the result is a complete proof (solved, or exhausted to maxBudget). */
   proven: boolean;
+  /** True when the deadline or node cap cut the search short. */
+  aborted: boolean;
 }
 
 export interface ExactMinOptions {
-  /** Largest mirror count to try. */
+  /** Largest mirror count to try (ceiling on the answer). Default 16. */
   maxBudget?: number;
-  /** Abort guard: stop after this many beam simulations. */
+  /** Resume point: first budget level to search. Default 1. */
+  startBudget?: number;
+  /** Absolute epoch-ms wall-clock deadline; the search stops once reached. */
+  deadlineMs?: number;
+  /** Optional node cap; the search stops once reached. */
   nodeCap?: number;
 }
 
 const DEFAULT_MAX_BUDGET = 16;
-const DEFAULT_NODE_CAP = 15_000_000;
+const DEADLINE_CHECK_MASK = 0x1fff; // check the clock every ~8192 nodes
 
 const key = (x: number, y: number): string => `${x},${y}`;
 
@@ -54,7 +70,9 @@ export function solveExactMin(
   options: ExactMinOptions = {}
 ): ExactMinResult {
   const maxBudget = options.maxBudget ?? DEFAULT_MAX_BUDGET;
-  const nodeCap = options.nodeCap ?? DEFAULT_NODE_CAP;
+  const startBudget = Math.max(1, options.startBudget ?? 1);
+  const deadlineMs = options.deadlineMs;
+  const nodeCap = options.nodeCap ?? Infinity;
 
   const emptySet = new Set(emptyCells(puzzle).map((c) => key(c.x, c.y)));
   const numberAt = new Map(
@@ -80,11 +98,19 @@ export function solveExactMin(
 
   const dfs = (mirrorCount: number, budget: number): boolean => {
     if (found) return true;
+    nodes++;
     if (nodes >= nodeCap) {
       aborted = true;
       return false;
     }
-    nodes++;
+    if (
+      deadlineMs !== undefined &&
+      (nodes & DEADLINE_CHECK_MASK) === 0 &&
+      Date.now() >= deadlineMs
+    ) {
+      aborted = true;
+      return false;
+    }
 
     const mirrors = mirrorList();
     const laser = calculateLaserPath(puzzle, mirrors);
@@ -137,26 +163,41 @@ export function solveExactMin(
     return false;
   };
 
-  let provenNoSolutionUpTo = 0; // highest budget searched to exhaustion, no solution
-  for (let budget = 1; budget <= maxBudget; budget++) {
+  let provenNoSolutionUpTo = startBudget - 1; // levels below the resume point assumed proven
+  for (let budget = startBudget; budget <= maxBudget; budget++) {
     decisions.clear();
     found = null;
     aborted = false;
 
     if (dfs(0, budget)) {
-      return { minMirrors: found!.length, solution: found!, nodes, proven: true };
+      return {
+        minMirrors: found!.length,
+        solution: found!,
+        nodes,
+        provenNoSolutionUpTo,
+        proven: true,
+        aborted: false,
+      };
     }
     if (aborted) {
-      // Budget `budget` was cut short; the strongest proof is the prior budget.
+      // This budget was cut short; the strongest proof remains the prior level.
       return {
         minMirrorsAtLeast: provenNoSolutionUpTo + 1,
         nodes,
+        provenNoSolutionUpTo,
         proven: false,
+        aborted: true,
       };
     }
     provenNoSolutionUpTo = budget;
   }
 
   // Exhausted every budget up to maxBudget with no solution — a proven bound.
-  return { minMirrorsAtLeast: maxBudget + 1, nodes, proven: true };
+  return {
+    minMirrorsAtLeast: maxBudget + 1,
+    nodes,
+    provenNoSolutionUpTo,
+    proven: true,
+    aborted: false,
+  };
 }

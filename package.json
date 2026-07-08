@@ -11,6 +11,7 @@
     "puzzles:generate": "tsx scripts/puzzles/generate.ts",
     "puzzles:calibrate": "tsx scripts/puzzles/calibrate.ts",
     "puzzles:stats": "tsx scripts/puzzles/stats.ts",
+    "puzzles:solve-min": "tsx scripts/puzzles/solve-min.ts",
     "verify:share": "tsx scripts/verify-share-text.ts"
   },
   "dependencies": {

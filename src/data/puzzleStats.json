@@ -63,21 +63,21 @@
     "minMirrorsAtLeast": 4
   },
   "23": {
-    "minMirrorsAtLeast": 7
+    "minMirrors": 7
   },
   "24": {
-    "minMirrorsAtLeast": 6
+    "minMirrors": 7
   },
   "25": {
     "minMirrorsAtLeast": 5
   },
   "26": {
-    "minMirrorsAtLeast": 7
+    "minMirrors": 9
   },
   "27": {
     "minMirrorsAtLeast": 4
   },
   "28": {
-    "minMirrorsAtLeast": 7
+    "minMirrors": 7
   }
 }
