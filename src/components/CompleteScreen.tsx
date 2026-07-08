@@ -32,7 +32,7 @@ function StatTile({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 border border-white/10 px-3 py-4">
-      <span className="text-[0.6rem] tracking-[0.25em] text-white/40">
+      <span className="flex min-h-[2.2em] items-center justify-center text-center text-[0.72rem] font-medium leading-tight tracking-[0.14em] text-white/45">
         {label}
       </span>
       <span
@@ -42,7 +42,7 @@ function StatTile({
         {value}
       </span>
       {/* Always render the caption row so every tile is the same height. */}
-      <span className="text-center text-[0.62rem] leading-tight tracking-wide text-white/45">
+      <span className="text-center text-[0.72rem] leading-tight tracking-wide text-white/50">
         {detail ?? " "}
       </span>
     </div>
@@ -181,14 +181,11 @@ export default function CompleteScreen() {
         </motion.div>
 
         <div className="grid w-full grid-cols-2 gap-3">
+          <StatTile label="MIRRORS USED" value={mirrorsUsed} />
           <StatTile
-            label="MIRRORS"
-            value={mirrorsUsed}
-            detail={minMirrors !== undefined ? `min ${minMirrors}` : null}
-          />
-          <StatTile
-            label="MIRROR EFF"
+            label="MIRROR EFFICIENCY"
             value={efficiency !== null ? `${efficiency}%` : "—"}
+            detail={minMirrors !== undefined ? `min ${minMirrors}` : null}
             accentValue={efficiency === 100}
           />
           <StatTile
@@ -198,10 +195,9 @@ export default function CompleteScreen() {
             accentValue={wrongNumberHits > 0}
           />
           <StatTile
-            label="SPEED EFF"
+            label="SPEED EFFICIENCY"
             value={speedEfficiency !== null ? `${speedEfficiency}%` : "—"}
             detail={`par ${formatTime(parSeconds)}`}
-            accentValue={speedEfficiency === 100}
           />
         </div>
 
