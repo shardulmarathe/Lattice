@@ -30,19 +30,19 @@
     "minMirrorsAtLeast": 4
   },
   "11": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 9
   },
   "12": {
-    "minMirrorsAtLeast": 5
+    "minMirrors": 12
   },
   "13": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 11
   },
   "14": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 10
   },
   "15": {
-    "minMirrorsAtLeast": 5
+    "minMirrors": 11
   },
   "16": {
     "minMirrors": 12
