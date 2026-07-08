@@ -9,12 +9,7 @@ import { loadGameState, saveGameState } from "@/lib/gameStorage";
 import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
-import {
-  getMirrorEfficiency,
-  getParSeconds,
-  getPuzzleStats,
-  getSpeedEfficiency,
-} from "@/lib/puzzleStats";
+import { getMirrorEfficiency, getPuzzleStats } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
 
 const ACCENT = "#FF2D2D";
@@ -112,8 +107,6 @@ export default function CompleteScreen() {
 
   const efficiency = getMirrorEfficiency(puzzle.id, mirrorsUsed);
   const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
-  const speedEfficiency = getSpeedEfficiency(puzzle, timeSeconds);
-  const parSeconds = getParSeconds(puzzle);
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -202,11 +195,9 @@ export default function CompleteScreen() {
             accentValue={wrongNumberHits > 0}
             big
           />
-          <StatTile
-            label="SPEED"
-            value={speedEfficiency !== null ? `${speedEfficiency}%` : "—"}
-            detail={`Fastest: ${formatTime(parSeconds)}`}
-          />
+          {/* Temporary: show a static "Fast" label instead of the speed % until
+              the pacing metric is finalized. */}
+          <StatTile label="SPEED" value="Fast" />
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-4">
