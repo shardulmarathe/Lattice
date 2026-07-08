@@ -9,7 +9,12 @@ import { loadGameState, saveGameState } from "@/lib/gameStorage";
 import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
-import { getMirrorEfficiency, getPuzzleStats } from "@/lib/puzzleStats";
+import {
+  getMirrorEfficiency,
+  getParSeconds,
+  getPuzzleStats,
+  getSpeedEfficiency,
+} from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
 
 const ACCENT = "#FF2D2D";
@@ -26,7 +31,7 @@ function StatTile({
   accentValue?: boolean;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center gap-1.5 border border-white/10 px-3 py-4">
+    <div className="flex flex-col items-center justify-center gap-2 border border-white/10 px-3 py-4">
       <span className="text-[0.6rem] tracking-[0.25em] text-white/40">
         {label}
       </span>
@@ -36,11 +41,10 @@ function StatTile({
       >
         {value}
       </span>
-      {detail && (
-        <span className="text-center text-[0.62rem] leading-tight tracking-wide text-white/45">
-          {detail}
-        </span>
-      )}
+      {/* Always render the caption row so every tile is the same height. */}
+      <span className="text-center text-[0.62rem] leading-tight tracking-wide text-white/45">
+        {detail ?? " "}
+      </span>
     </div>
   );
 }
@@ -105,11 +109,8 @@ export default function CompleteScreen() {
 
   const efficiency = getMirrorEfficiency(puzzle.id, mirrorsUsed);
   const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
-  const mirrorDetail =
-    efficiency !== null
-      ? `min ${minMirrors} · ${efficiency}% efficient`
-      : null;
-  const misrouteDetail = wrongNumberHits === 0 ? "clean run" : null;
+  const speedEfficiency = getSpeedEfficiency(puzzle, timeSeconds);
+  const parSeconds = getParSeconds(puzzle);
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -179,18 +180,28 @@ export default function CompleteScreen() {
           </svg>
         </motion.div>
 
-        <div className="flex w-full gap-3">
+        <div className="grid w-full grid-cols-2 gap-3">
           <StatTile
             label="MIRRORS"
             value={mirrorsUsed}
-            detail={mirrorDetail}
+            detail={minMirrors !== undefined ? `min ${minMirrors}` : null}
+          />
+          <StatTile
+            label="MIRROR EFF"
+            value={efficiency !== null ? `${efficiency}%` : "—"}
             accentValue={efficiency === 100}
           />
           <StatTile
             label="MISROUTES"
             value={wrongNumberHits}
-            detail={misrouteDetail}
+            detail={wrongNumberHits === 0 ? "clean run" : null}
             accentValue={wrongNumberHits > 0}
+          />
+          <StatTile
+            label="SPEED EFF"
+            value={speedEfficiency !== null ? `${speedEfficiency}%` : "—"}
+            detail={`par ${formatTime(parSeconds)}`}
+            accentValue={speedEfficiency === 100}
           />
         </div>
 
