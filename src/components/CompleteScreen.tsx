@@ -203,7 +203,7 @@ export default function CompleteScreen() {
             big
           />
           <StatTile
-            label="SPEED EFFICIENCY"
+            label="SPEED"
             value={speedEfficiency !== null ? `${speedEfficiency}%` : "—"}
             detail={`Fastest: ${formatTime(parSeconds)}`}
           />
