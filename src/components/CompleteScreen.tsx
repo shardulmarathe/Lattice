@@ -24,11 +24,13 @@ function StatTile({
   value,
   detail,
   accentValue = false,
+  big = false,
 }: {
   label: string;
   value: string | number;
   detail?: string | null;
   accentValue?: boolean;
+  big?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 border border-white/10 px-3 py-4">
@@ -36,7 +38,7 @@ function StatTile({
         {label}
       </span>
       <span
-        className="font-mono text-3xl leading-none"
+        className={`font-mono leading-none ${big ? "text-[2.6rem]" : "text-3xl"}`}
         style={{ color: accentValue ? ACCENT : "#ffffff" }}
       >
         {value}
@@ -181,7 +183,7 @@ export default function CompleteScreen() {
         </motion.div>
 
         <div className="grid w-full grid-cols-2 gap-3">
-          <StatTile label="MIRRORS USED" value={mirrorsUsed} />
+          <StatTile label="MIRRORS USED" value={mirrorsUsed} big />
           <StatTile
             label="MIRROR EFFICIENCY"
             value={efficiency !== null ? `${efficiency}%` : "—"}
@@ -193,6 +195,7 @@ export default function CompleteScreen() {
             value={wrongNumberHits}
             detail={wrongNumberHits === 0 ? "clean run" : null}
             accentValue={wrongNumberHits > 0}
+            big
           />
           <StatTile
             label="SPEED EFFICIENCY"
