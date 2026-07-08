@@ -34,7 +34,7 @@ function StatTile({
 }) {
   return (
     <div className="flex flex-col items-center border border-white/10 px-3 py-4">
-      <span className="flex min-h-[2.2em] items-center justify-center text-center text-[0.72rem] font-medium leading-tight tracking-[0.14em] text-white/45">
+      <span className="flex min-h-[2.2em] items-center justify-center text-center text-[0.68rem] font-medium leading-tight tracking-[0.06em] text-white/45">
         {label}
       </span>
       <span
