@@ -188,7 +188,11 @@ export default function CompleteScreen() {
           <StatTile
             label="MIRROR EFFICIENCY"
             value={efficiency !== null ? `${efficiency}%` : "—"}
-            detail={minMirrors !== undefined ? `min ${minMirrors}` : null}
+            detail={
+              minMirrors !== undefined
+                ? `Least: ${minMirrors} mirror${minMirrors === 1 ? "" : "s"}`
+                : null
+            }
             accentValue={efficiency === 100}
           />
           <StatTile
@@ -201,7 +205,7 @@ export default function CompleteScreen() {
           <StatTile
             label="SPEED EFFICIENCY"
             value={speedEfficiency !== null ? `${speedEfficiency}%` : "—"}
-            detail={`par ${formatTime(parSeconds)}`}
+            detail={`Fastest: ${formatTime(parSeconds)}`}
           />
         </div>
 
