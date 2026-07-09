@@ -98,12 +98,12 @@ export function getEfficiencyScore(
  * difficulty automatically. Unlike the record floor (getFastestSeconds, ~1
  * s/mirror with the solution memorized), these bands describe live solves that
  * include thinking time:
- *   5: ≤4 s/mirror (expert) · 4: ≤8 (brisk) · 3: ≤15 (solid) · 2: ≤30 · 1: slower
+ *   5: ≤2 s/mirror (expert) · 4: ≤4 (brisk) · 3: ≤8 (solid) · 2: ≤16 · 1: slower
  * Falls back from exact min → proven lower bound → grid size, like the floor.
  */
 const SPEED_METER_BASE_SECONDS = 3;
 const SPEED_METER_BANDS_SECONDS_PER_MIRROR: [number, number, number, number] = [
-  4, 8, 15, 30,
+  2, 4, 8, 16,
 ];
 
 export function getSpeedScore(puzzle: Puzzle, timeSeconds: number): MeterScore {
@@ -130,20 +130,19 @@ export function getAccuracyScore(wrongNumberHits: number): MeterScore {
   return 1;
 }
 
-export type SpeedLabel = "Blazing" | "Fast" | "Steady" | "Relaxed" | "Unhurried";
+export type SpeedLabel = "Blazing" | "Fast" | "Normal" | "Slowish" | "Slow";
 
 const SPEED_LABELS: Record<MeterScore, SpeedLabel> = {
   5: "Blazing",
   4: "Fast",
-  3: "Steady",
-  2: "Relaxed",
-  1: "Unhurried",
+  3: "Normal",
+  2: "Slowish",
+  1: "Slow",
 };
 
 /**
  * Player-facing pace word, mapped 1:1 from the five speed-meter scores so the
- * label and the dots can never disagree. Positive-to-neutral across the whole
- * range — never a negative label.
+ * label and the dots can never disagree.
  */
 export function getSpeedLabel(puzzle: Puzzle, timeSeconds: number): SpeedLabel {
   return SPEED_LABELS[getSpeedScore(puzzle, timeSeconds)];

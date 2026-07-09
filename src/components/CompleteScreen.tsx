@@ -235,8 +235,8 @@ export default function CompleteScreen() {
             accentValue={wrongNumberHits > 0}
             big
           />
-          {/* Pace label derived from the puzzle's min-mirror floor: Blazing (≤
-              fastest) · Fast (≤ good) · Steady (≤ 2×good) · Relaxed. */}
+          {/* Pace label mapped 1:1 from the speed-meter score, which bands on
+              seconds per required mirror (see getSpeedScore). */}
           <StatTile
             label="SPEED LABEL"
             value={speedLabel}
