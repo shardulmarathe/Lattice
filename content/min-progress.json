@@ -23,6 +23,10 @@
     "solved": true,
     "minMirrors": 18
   },
+  "20": {
+    "solved": false,
+    "provenNoSolutionUpTo": 12
+  },
   "23": {
     "solved": true,
     "minMirrors": 7
