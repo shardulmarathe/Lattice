@@ -1,33 +1,33 @@
 {
   "1": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 8
   },
   "2": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 10
   },
   "3": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 11
   },
   "4": {
-    "minMirrorsAtLeast": 6
+    "minMirrors": 11
   },
   "5": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 10
   },
   "6": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 10
   },
   "7": {
-    "minMirrorsAtLeast": 5
+    "minMirrors": 12
   },
   "8": {
-    "minMirrorsAtLeast": 4
+    "minMirrorsAtLeast": 13
   },
   "9": {
-    "minMirrorsAtLeast": 6
+    "minMirrors": 8
   },
   "10": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 11
   },
   "11": {
     "minMirrors": 9
@@ -54,13 +54,13 @@
     "minMirrors": 4
   },
   "19": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 12
   },
   "20": {
-    "minMirrorsAtLeast": 4
+    "minMirrorsAtLeast": 10
   },
   "22": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 12
   },
   "23": {
     "minMirrors": 7
@@ -69,13 +69,13 @@
     "minMirrors": 7
   },
   "25": {
-    "minMirrorsAtLeast": 5
+    "minMirrors": 8
   },
   "26": {
     "minMirrors": 9
   },
   "27": {
-    "minMirrorsAtLeast": 4
+    "minMirrors": 7
   },
   "28": {
     "minMirrors": 7

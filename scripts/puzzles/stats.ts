@@ -10,10 +10,15 @@
  *       the file, and otherwise records the cheap grader's lower bound. Never
  *       downgrades an existing exact `minMirrors` to a bound.
  *
- *   npm run puzzles:stats -- --exact [--ids=16,17] [--force] [--budget=N] [--node-cap=N]
+ *   npm run puzzles:stats -- --exact [--ids=16,17] [--force] [--budget=N] [--node-cap=N] [--minutes=N]
  *       Runs the beam-guided exact-min solver (exactMin.ts) to UPGRADE lower
  *       bounds to exact minimums where it can. Slow — target ids while backfilling.
  *       --force recomputes ids that already have an exact value.
+ *       --minutes=N caps the solve time PER targeted id (each gets its own
+ *       wall-clock slice, so one hard puzzle can't starve the rest); total run
+ *       time ≈ N × (targeted ids needing a solve). The solver stops gracefully
+ *       and records the best bound it proved. Pair with a huge --node-cap to let
+ *       time be the only limiter. A time-limited run never lowers an existing bound.
  */
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -37,6 +42,7 @@ interface Args {
   ids: Set<number> | null;
   budget: number | undefined;
   nodeCap: number | undefined;
+  minutes: number | undefined;
 }
 
 function parseArgs(): Args {
@@ -46,6 +52,7 @@ function parseArgs(): Args {
     ids: null,
     budget: undefined,
     nodeCap: undefined,
+    minutes: undefined,
   };
   for (const arg of process.argv.slice(2)) {
     if (arg === "--exact") args.exact = true;
@@ -54,6 +61,7 @@ function parseArgs(): Args {
       args.ids = new Set(arg.slice("--ids=".length).split(",").map(Number));
     else if (arg.startsWith("--budget=")) args.budget = Number(arg.slice("--budget=".length));
     else if (arg.startsWith("--node-cap=")) args.nodeCap = Number(arg.slice("--node-cap=".length));
+    else if (arg.startsWith("--minutes=")) args.minutes = Number(arg.slice("--minutes=".length));
   }
   return args;
 }
@@ -91,7 +99,19 @@ function readExistingStats(): Record<number, PuzzleStat> {
 const args = parseArgs();
 const sidecarStats = readSidecarStats();
 const cache = readExistingStats();
-const stats: Record<number, PuzzleStat> = {};
+// Seed from the existing file so the on-disk map is always complete, even when
+// we flush mid-run (a long --exact pass may be interrupted before the last id).
+const stats: Record<number, PuzzleStat> = { ...cache };
+
+function writeStats(): void {
+  const ordered: Record<number, PuzzleStat> = {};
+  for (const id of Object.keys(stats)
+    .map(Number)
+    .sort((a, b) => a - b)) {
+    ordered[id] = stats[id];
+  }
+  writeFileSync(STATS_FILE, JSON.stringify(ordered, null, 2) + "\n");
+}
 
 for (const puzzle of PUZZLES) {
   const id = puzzle.id;
@@ -111,14 +131,31 @@ for (const puzzle of PUZZLES) {
 
   // Optional heavy exact-min upgrade.
   const targeted = args.ids === null || args.ids.has(id);
-  if (args.exact && targeted && (stat.minMirrors === undefined || args.force)) {
+  const willSolve =
+    args.exact && targeted && (stat.minMirrors === undefined || args.force);
+  if (willSolve) {
     const t0 = Date.now();
-    const res = solveExactMin(puzzle, { maxBudget: args.budget, nodeCap: args.nodeCap });
+    // Per-puzzle wall-clock budget: each targeted id gets its own --minutes
+    // slice, so a hard puzzle can't starve the others. Total run time ≈
+    // minutes × (number of targeted ids still needing a solve).
+    const deadlineMs =
+      args.minutes !== undefined ? Date.now() + args.minutes * 60_000 : undefined;
+    const res = solveExactMin(puzzle, {
+      maxBudget: args.budget,
+      nodeCap: args.nodeCap,
+      deadlineMs,
+    });
     const secs = ((Date.now() - t0) / 1000).toFixed(1);
     if (res.minMirrors !== undefined) {
       stat = { minMirrors: res.minMirrors };
     } else {
-      const bound = Math.max(res.minMirrorsAtLeast ?? 0, stat.minMirrorsAtLeast ?? 0);
+      // A time/node-limited run can return a weaker bound than one already
+      // recorded — never let it lower the best-known lower bound.
+      const bound = Math.max(
+        res.minMirrorsAtLeast ?? 0,
+        stat.minMirrorsAtLeast ?? 0,
+        cached?.minMirrorsAtLeast ?? 0
+      );
       stat = { minMirrorsAtLeast: bound };
     }
     console.log(
@@ -131,14 +168,9 @@ for (const puzzle of PUZZLES) {
   }
 
   stats[id] = stat;
+  // Flush after each heavy solve so an interrupted long run keeps its progress.
+  if (willSolve) writeStats();
 }
 
-const ordered: Record<number, PuzzleStat> = {};
-for (const id of Object.keys(stats)
-  .map(Number)
-  .sort((a, b) => a - b)) {
-  ordered[id] = stats[id];
-}
-
-writeFileSync(STATS_FILE, JSON.stringify(ordered, null, 2) + "\n");
-console.log(`\nWrote ${Object.keys(ordered).length} puzzle stats → ${STATS_FILE}`);
+writeStats();
+console.log(`\nWrote ${Object.keys(stats).length} puzzle stats → ${STATS_FILE}`);

@@ -1,5 +1,4 @@
 import puzzleStatsData from "@/data/puzzleStats.json";
-import { FASTEST_TIMES } from "@/data/fastestTimes";
 import type { Puzzle } from "@/lib/puzzleTypes";
 
 /**
@@ -34,41 +33,54 @@ export function getMirrorEfficiency(
   return Math.round((minMirrors / mirrorsUsed) * 100);
 }
 
-// Difficulty-based par time. Driven mainly by grid area (a robust difficulty
-// signal even when a puzzle's exact minimum isn't known), with smaller code-
-// length and min-mirror terms. It's a heuristic target, not a measured average.
-const PAR_BASE_SECONDS = 20;
-const PAR_PER_CELL = 1.5;
-const PAR_PER_DIGIT = 6;
-const PAR_PER_MIRROR = 3;
+// Speed pacing, derived entirely from a puzzle's minimum mirror count. The
+// "fastest" floor is what a speed-runner who already knows the solution needs
+// to physically place the mirrors: a small orient/read base plus ~1s per mirror.
+// Calibrated to the one real record we have (#11: 9 mirrors solved in 12s → 3 +
+// 9·1 = 12). The "good" target is a competent (non-record) solve at 2.5× that
+// floor. Both scale with mirror count, a robust difficulty signal that works
+// even from a lower bound (minMirrorsAtLeast) until the exact min is proven.
+const FASTEST_BASE_SECONDS = 3;
+const FASTEST_SECONDS_PER_MIRROR = 1.0;
+const GOOD_MULTIPLIER = 2.5;
 
 /**
- * Target time (seconds) for a puzzle used by Speed Efficiency. Prefers a curated
- * fastest time when one exists, otherwise falls back to a difficulty heuristic
- * (rounded to a clean 5s).
+ * Fastest achievable solve time (seconds) — the record floor a puzzle is paced
+ * against. Uses the exact minimum when known, else the proven lower bound, else
+ * grid size as a last-resort proxy.
  */
-export function getParSeconds(puzzle: Puzzle): number {
-  const curated = FASTEST_TIMES[puzzle.id];
-  if (curated !== undefined) return curated;
-
+export function getFastestSeconds(puzzle: Puzzle): number {
   const { minMirrors, minMirrorsAtLeast } = getPuzzleStats(puzzle.id);
   const mirrorRef = minMirrors ?? minMirrorsAtLeast ?? puzzle.gridSize;
-  const raw =
-    PAR_BASE_SECONDS +
-    PAR_PER_CELL * puzzle.gridSize * puzzle.gridSize +
-    PAR_PER_DIGIT * puzzle.code.length +
-    PAR_PER_MIRROR * mirrorRef;
-  return Math.round(raw / 5) * 5;
+  return Math.round(
+    FASTEST_BASE_SECONDS + FASTEST_SECONDS_PER_MIRROR * mirrorRef
+  );
 }
 
 /**
- * Speed efficiency: par ÷ completion time, as a whole percent capped at 100%.
- * 100% means you solved at or under the par target. Null for a non-positive time.
+ * "Good" target time (seconds): a realistic goal for a competent solver, set at
+ * GOOD_MULTIPLIER × the fastest floor.
  */
-export function getSpeedEfficiency(
-  puzzle: Puzzle,
-  timeSeconds: number
-): number | null {
-  if (timeSeconds <= 0) return null;
-  return Math.min(100, Math.round((getParSeconds(puzzle) / timeSeconds) * 100));
+export function getGoodSeconds(puzzle: Puzzle): number {
+  return Math.round(getFastestSeconds(puzzle) * GOOD_MULTIPLIER);
+}
+
+export type SpeedLabel = "Blazing" | "Fast" | "Steady" | "Relaxed";
+
+/**
+ * Player-facing pace label for a completion time. Bands, from a puzzle's fastest
+ * floor (F) and good target (G):
+ *   time ≤ F      → "Blazing"  (at/under the record floor)
+ *   time ≤ G      → "Fast"     (competent pace)
+ *   time ≤ 2·G    → "Steady"
+ *   otherwise     → "Relaxed"
+ * Positive-to-neutral across the whole range — never a negative label.
+ */
+export function getSpeedLabel(puzzle: Puzzle, timeSeconds: number): SpeedLabel {
+  const fastest = getFastestSeconds(puzzle);
+  const good = getGoodSeconds(puzzle);
+  if (timeSeconds <= fastest) return "Blazing";
+  if (timeSeconds <= good) return "Fast";
+  if (timeSeconds <= good * 2) return "Steady";
+  return "Relaxed";
 }
