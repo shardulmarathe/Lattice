@@ -68,8 +68,8 @@ export default function HowToPlayModal({
 
             <ul className="mb-6 list-disc space-y-2 pl-5 text-sm leading-relaxed text-white/70">
               <li>
-                Click empty cells to place mirrors. Click again to cycle{" "}
-                <span className="text-white">/</span> and{" "}
+                Click on the laser to place a mirror and redirect it. Click
+                again to cycle <span className="text-white">/</span> and{" "}
                 <span className="text-white">\</span>, then remove.
               </li>
               <li>Collect every digit of the target code in order.</li>

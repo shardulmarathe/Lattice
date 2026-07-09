@@ -455,7 +455,7 @@ export default function GameScreen() {
           <p className="mt-3 text-center text-xs tracking-wider text-white/70 md:mt-6 md:text-sm">
             {isViewingSolve
               ? "Your solution — mirrors locked."
-              : "Click empty cells to place mirrors. Click again to rotate or remove."}
+              : "Click on laser to place mirror to redirect it. Click again to rotate or remove mirror. Lasers may intersect each other."}
           </p>
 
           {!isViewingSolve && (
