@@ -51,6 +51,31 @@ function pluralize(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
+// Clipboard share text is plain text, which can't carry real formatting — so
+// emphasized figures (the speed label, the efficiency percentage) are mapped to
+// Unicode sans-serif bold code points (𝗙𝗮𝘀𝘁, 𝟴𝟲%), which render bold when
+// pasted into most chat and social apps.
+const BOLD_UPPER_A = 0x1d5d4; // 𝗔
+const BOLD_LOWER_A = 0x1d5ee; // 𝗮
+const BOLD_ZERO = 0x1d7ec; // 𝟬
+
+export function toBoldSans(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x41 && code <= 0x5a) {
+      out += String.fromCodePoint(BOLD_UPPER_A + code - 0x41);
+    } else if (code >= 0x61 && code <= 0x7a) {
+      out += String.fromCodePoint(BOLD_LOWER_A + code - 0x61);
+    } else if (code >= 0x30 && code <= 0x39) {
+      out += String.fromCodePoint(BOLD_ZERO + code - 0x30);
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 /** Line 3: mirror efficiency, shown only when the exact minimum is known. */
 function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
   const base = pluralize(mirrorsUsed, "mirror");
@@ -58,18 +83,19 @@ function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
   if (efficiency === null) return base;
 
   const { minMirrors } = getPuzzleStats(puzzleId);
-  return `${base} (min ${minMirrors}) · ${efficiency}% efficient`;
+  return `${base} (min ${minMirrors}) · ${toBoldSans(`${efficiency}%`)} efficient`;
 }
 
 /**
  * Fixed-size share text (no emoji grid). Line 2 pairs the completion time with
  * the puzzle's speed label. When the puzzle's exact minimum mirror count is
  * known, line 3 includes an efficiency figure; otherwise it lists the mirror
- * count alone.
+ * count alone. The speed label and efficiency percentage use Unicode bold
+ * (toBoldSans) so they stand out when pasted.
  *
  *   Lattice #022 · 8×8
- *   02:14 · Fast
- *   6 mirrors (min 4) · 67% efficient
+ *   02:14 · 𝗙𝗮𝘀𝘁
+ *   6 mirrors (min 4) · 𝟲𝟳% efficient
  *   1 misroute
  *   https://playlattice.vercel.app
  */
@@ -87,7 +113,7 @@ export function getShareText(
     : `Lattice #${paddedId}`;
 
   const timeLine = puzzle
-    ? `${formatTime(timeSeconds)} · ${getSpeedLabel(puzzle, timeSeconds)}`
+    ? `${formatTime(timeSeconds)} · ${toBoldSans(getSpeedLabel(puzzle, timeSeconds))}`
     : formatTime(timeSeconds);
 
   return [

@@ -1,6 +1,10 @@
 import { PUZZLES } from "../src/data/puzzles";
 import { PUZZLE_SCHEDULE } from "../src/data/schedule";
-import { buildPuzzleEmojiGrid, getShareText } from "../src/lib/shareText";
+import {
+  buildPuzzleEmojiGrid,
+  getShareText,
+  toBoldSans,
+} from "../src/lib/shareText";
 import { productionSiteUrl } from "../src/lib/site";
 import type { Puzzle } from "../src/lib/puzzleTypes";
 
@@ -115,11 +119,16 @@ function verifyPuzzle(puzzle: Puzzle): string[] {
   if (lines[0] !== `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`) {
     issues.push(`share text header wrong: ${JSON.stringify(lines[0])}`);
   }
-  if (!/^01:30 · (Blazing|Fast|Steady|Relaxed)$/.test(lines[1] ?? "")) {
+  const speedLabels = ["Blazing", "Fast", "Steady", "Relaxed"].map(toBoldSans);
+  if (!speedLabels.some((label) => lines[1] === `01:30 · ${label}`)) {
     issues.push(`share text time wrong: ${JSON.stringify(lines[1])}`);
   }
   if (!lines[2]?.startsWith("3 mirror")) {
     issues.push(`share text mirror line wrong: ${JSON.stringify(lines[2])}`);
+  }
+  // When efficiency is present it must use bold digits (e.g. "· 𝟲𝟳% efficient").
+  if (lines[2]?.includes("efficient") && !/[\u{1D7EC}-\u{1D7F5}]%/u.test(lines[2])) {
+    issues.push(`efficiency should be bold: ${JSON.stringify(lines[2])}`);
   }
   if (lines[3] !== "1 misroute") {
     issues.push(`share text misroute line wrong: ${JSON.stringify(lines[3])}`);
