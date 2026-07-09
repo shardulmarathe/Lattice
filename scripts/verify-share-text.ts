@@ -1,10 +1,7 @@
 import { PUZZLES } from "../src/data/puzzles";
 import { PUZZLE_SCHEDULE } from "../src/data/schedule";
-import {
-  buildPuzzleEmojiGrid,
-  getShareText,
-  toBoldSans,
-} from "../src/lib/shareText";
+import { buildPuzzleEmojiGrid, getShareText } from "../src/lib/shareText";
+import { getPuzzleStats } from "../src/lib/puzzleStats";
 import { productionSiteUrl } from "../src/lib/site";
 import type { Puzzle } from "../src/lib/puzzleTypes";
 
@@ -108,33 +105,55 @@ function verifyPuzzle(puzzle: Puzzle): string[] {
     }
   }
 
-  // Fixed-size share text: 5 lines, no emoji grid.
-  const share = getShareText(puzzle.id, 90, 3, 1);
+  // Fixed-size scorecard share text: 7 lines (header, blank, 3 meters, blank,
+  // URL), no emoji grid. Simulate a realistic solve: 2 mirrors above the proven
+  // minimum, 90 seconds, 1 misroute.
+  const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
+  const mirrorsUsed = (minMirrors ?? 3) + 2;
+  const share = getShareText(puzzle.id, 90, mirrorsUsed, 1);
   const lines = share.split("\n");
   const paddedId = String(puzzle.id).padStart(3, "0");
 
-  if (lines.length !== 5) {
-    issues.push(`share text expected 5 lines, got ${lines.length}`);
+  if (lines.length !== 7) {
+    issues.push(`share text expected 7 lines, got ${lines.length}`);
   }
   if (lines[0] !== `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`) {
     issues.push(`share text header wrong: ${JSON.stringify(lines[0])}`);
   }
-  const speedLabels = ["Blazing", "Fast", "Steady", "Relaxed"].map(toBoldSans);
-  if (!speedLabels.some((label) => lines[1] === `01:30 · ${label}`)) {
-    issues.push(`share text time wrong: ${JSON.stringify(lines[1])}`);
+  if (lines[1] !== "" || lines[5] !== "") {
+    issues.push("share text lines 2 and 6 should be blank separators");
   }
-  if (!lines[2]?.startsWith("3 mirror")) {
-    issues.push(`share text mirror line wrong: ${JSON.stringify(lines[2])}`);
+
+  // Each meter row: padded label, exactly five dots, then a detail.
+  const meters: Array<[line: string | undefined, label: string]> = [
+    [lines[2], "Efficiency"],
+    [lines[3], "Speed"],
+    [lines[4], "Accuracy"],
+  ];
+  for (const [line, label] of meters) {
+    if (!line?.startsWith(label)) {
+      issues.push(`expected a ${label} meter, got ${JSON.stringify(line)}`);
+      continue;
+    }
+    const filled = countEmoji(line, "🔴");
+    const empty = countEmoji(line, "⚫");
+    if (filled + empty !== 5 || filled < 1) {
+      issues.push(`${label} meter should have 5 dots (≥1 filled): ${JSON.stringify(line)}`);
+    }
   }
-  // When efficiency is present it must use bold digits (e.g. "· 𝟲𝟳% efficient").
-  if (lines[2]?.includes("efficient") && !/[\u{1D7EC}-\u{1D7F5}]%/u.test(lines[2])) {
-    issues.push(`efficiency should be bold: ${JSON.stringify(lines[2])}`);
+
+  // Details: +2 mirrors above the known minimum, m:ss time, 1 misroute = 5/5.
+  if (minMirrors !== undefined && !lines[2]?.endsWith("+2 Mirrors Above Optimal")) {
+    issues.push(`efficiency detail wrong: ${JSON.stringify(lines[2])}`);
   }
-  if (lines[3] !== "1 misroute") {
-    issues.push(`share text misroute line wrong: ${JSON.stringify(lines[3])}`);
+  if (!lines[3]?.endsWith("1:30")) {
+    issues.push(`speed detail wrong: ${JSON.stringify(lines[3])}`);
   }
-  if (lines[4] !== productionSiteUrl) {
-    issues.push(`share text url wrong: ${JSON.stringify(lines[4])}`);
+  if (!lines[4]?.endsWith("1 Mistake") || countEmoji(lines[4] ?? "", "🔴") !== 5) {
+    issues.push(`accuracy detail wrong (1 misroute should be 5/5 + "1 Mistake"): ${JSON.stringify(lines[4])}`);
+  }
+  if (lines[6] !== productionSiteUrl) {
+    issues.push(`share text url wrong: ${JSON.stringify(lines[6])}`);
   }
   for (const emoji of [CELL_EMPTY, CELL_OBSTACLE, CELL_SOURCE, CELL_FLAG]) {
     if (share.includes(emoji)) {

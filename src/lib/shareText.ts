@@ -1,12 +1,13 @@
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getPuzzleById } from "@/data/puzzles";
 import {
-  getMirrorEfficiency,
+  getAccuracyScore,
+  getEfficiencyScore,
   getPuzzleStats,
-  getSpeedLabel,
+  getSpeedScore,
+  type MeterScore,
 } from "@/lib/puzzleStats";
 import { productionSiteUrl } from "@/lib/site";
-import { formatTime } from "@/lib/validation";
 
 const CELL_EMPTY = "🔳";
 const CELL_OBSTACLE = "⬜";
@@ -76,27 +77,59 @@ export function toBoldSans(text: string): string {
   return out;
 }
 
-/** Line 3: mirror efficiency, shown only when the exact minimum is known. */
-function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
-  const base = pluralize(mirrorsUsed, "mirror");
-  const efficiency = getMirrorEfficiency(puzzleId, mirrorsUsed);
-  if (efficiency === null) return base;
+// --- Scorecard share text -----------------------------------------------
+// Three 1–5 meters (Efficiency / Speed / Accuracy), each a row of five dots
+// with a plain-language detail. Scores come from src/lib/puzzleStats.ts so the
+// share always agrees with the completion screen.
 
+const DOT_FILLED = "🔴";
+const DOT_EMPTY = "⚫";
+// Labels are padded to the longest ("Efficiency") so the dot columns line up
+// in monospace contexts; proportional fonts stay close enough.
+const METER_LABEL_WIDTH = "Efficiency".length;
+
+function meterDots(score: MeterScore): string {
+  return DOT_FILLED.repeat(score) + DOT_EMPTY.repeat(5 - score);
+}
+
+function meterLine(label: string, score: MeterScore, detail: string): string {
+  return `${label.padEnd(METER_LABEL_WIDTH)}  ${meterDots(score)}   ${detail}`;
+}
+
+/** Share time as m:ss (no leading zero on minutes — "3:18", not "03:18"). */
+export function formatShareTime(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/** Efficiency detail: mirror surplus over the proven minimum. */
+export function getEfficiencyDetail(
+  puzzleId: number,
+  mirrorsUsed: number
+): string {
   const { minMirrors } = getPuzzleStats(puzzleId);
-  return `${base} (min ${minMirrors}) · ${toBoldSans(`${efficiency}%`)} efficient`;
+  if (minMirrors === undefined) return pluralize(mirrorsUsed, "Mirror");
+  const above = Math.max(0, mirrorsUsed - minMirrors);
+  if (above === 0) return "Optimal";
+  return `+${pluralize(above, "Mirror")} Above Optimal`;
+}
+
+/** Accuracy detail: misroutes surfaced in plain language. */
+export function getAccuracyDetail(wrongNumberHits: number): string {
+  return pluralize(wrongNumberHits, "Mistake");
 }
 
 /**
- * Fixed-size share text (no emoji grid). Line 2 pairs the completion time with
- * the puzzle's speed label. When the puzzle's exact minimum mirror count is
- * known, line 3 includes an efficiency figure; otherwise it lists the mirror
- * count alone. The speed label and efficiency percentage use Unicode bold
- * (toBoldSans) so they stand out when pasted.
+ * Fixed-size scorecard share text (no emoji grid): header, three 1–5 meters,
+ * site URL.
  *
- *   Lattice #022 · 8×8
- *   02:14 · 𝗙𝗮𝘀𝘁
- *   6 mirrors (min 4) · 𝟲𝟳% efficient
- *   1 misroute
+ *   Lattice #017 · 9×9
+ *
+ *   Efficiency  🔴🔴🔴🔴⚫   +2 Mirrors Above Optimal
+ *   Speed       🔴🔴🔴⚫⚫   3:18
+ *   Accuracy    🔴🔴🔴🔴🔴   0 Mistakes
+ *
  *   https://playlattice.vercel.app
  */
 export function getShareText(
@@ -112,15 +145,19 @@ export function getShareText(
     ? `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`
     : `Lattice #${paddedId}`;
 
-  const timeLine = puzzle
-    ? `${formatTime(timeSeconds)} · ${toBoldSans(getSpeedLabel(puzzle, timeSeconds))}`
-    : formatTime(timeSeconds);
+  // Every registered puzzle has a proven exact minimum, so the efficiency
+  // score is always available in practice; 3 dots is a neutral fallback for
+  // an unresolvable id.
+  const efficiencyScore = getEfficiencyScore(puzzleId, mirrorsUsed) ?? 3;
+  const speedScore = puzzle ? getSpeedScore(puzzle, timeSeconds) : 3;
 
   return [
     header,
-    timeLine,
-    mirrorLine(puzzleId, mirrorsUsed),
-    pluralize(wrongNumberHits, "misroute"),
+    "",
+    meterLine("Efficiency", efficiencyScore, getEfficiencyDetail(puzzleId, mirrorsUsed)),
+    meterLine("Speed", speedScore, formatShareTime(timeSeconds)),
+    meterLine("Accuracy", getAccuracyScore(wrongNumberHits), getAccuracyDetail(wrongNumberHits)),
+    "",
     productionSiteUrl,
   ].join("\n");
 }

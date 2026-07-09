@@ -65,22 +65,86 @@ export function getGoodSeconds(puzzle: Puzzle): number {
   return Math.round(getFastestSeconds(puzzle) * GOOD_MULTIPLIER);
 }
 
-export type SpeedLabel = "Blazing" | "Fast" | "Steady" | "Relaxed";
+// ---------------------------------------------------------------------------
+// 1–5 meter scores — the shared scorecard basis for the completion screen and
+// the share text (Efficiency / Speed / Accuracy, five dots each).
+// ---------------------------------------------------------------------------
+
+export type MeterScore = 1 | 2 | 3 | 4 | 5;
 
 /**
- * Player-facing pace label for a completion time. Bands, from a puzzle's fastest
- * floor (F) and good target (G):
- *   time ≤ F      → "Blazing"  (at/under the record floor)
- *   time ≤ G      → "Fast"     (competent pace)
- *   time ≤ 2·G    → "Steady"
- *   otherwise     → "Relaxed"
- * Positive-to-neutral across the whole range — never a negative label.
+ * Efficiency meter. Banded on the percentage of optimal (minMirrors /
+ * mirrorsUsed) rather than the raw mirror surplus, so the meter is fair across
+ * puzzle sizes: +2 extra mirrors on a 4-mirror mini is far sloppier than +2 on
+ * an 18-mirror 9×9. Returns null when the exact minimum is unknown.
+ *   5: 100% (optimal) · 4: 85–99% · 3: 75–84% · 2: 65–74% · 1: below 65%
+ */
+export function getEfficiencyScore(
+  puzzleId: number,
+  mirrorsUsed: number
+): MeterScore | null {
+  const pct = getMirrorEfficiency(puzzleId, mirrorsUsed);
+  if (pct === null) return null;
+  if (pct >= 100) return 5;
+  if (pct >= 85) return 4;
+  if (pct >= 75) return 3;
+  if (pct >= 65) return 2;
+  return 1;
+}
+
+/**
+ * Speed meter. Banded on seconds-per-required-mirror (time ÷ the puzzle's
+ * proven minimum, after a small orient/read base), so pacing scales with
+ * difficulty automatically. Unlike the record floor (getFastestSeconds, ~1
+ * s/mirror with the solution memorized), these bands describe live solves that
+ * include thinking time:
+ *   5: ≤4 s/mirror (expert) · 4: ≤8 (brisk) · 3: ≤15 (solid) · 2: ≤30 · 1: slower
+ * Falls back from exact min → proven lower bound → grid size, like the floor.
+ */
+const SPEED_METER_BASE_SECONDS = 3;
+const SPEED_METER_BANDS_SECONDS_PER_MIRROR: [number, number, number, number] = [
+  4, 8, 15, 30,
+];
+
+export function getSpeedScore(puzzle: Puzzle, timeSeconds: number): MeterScore {
+  const { minMirrors, minMirrorsAtLeast } = getPuzzleStats(puzzle.id);
+  const mirrorRef = minMirrors ?? minMirrorsAtLeast ?? puzzle.gridSize;
+  const [expert, brisk, solid, leisurely] = SPEED_METER_BANDS_SECONDS_PER_MIRROR;
+  if (timeSeconds <= SPEED_METER_BASE_SECONDS + expert * mirrorRef) return 5;
+  if (timeSeconds <= SPEED_METER_BASE_SECONDS + brisk * mirrorRef) return 4;
+  if (timeSeconds <= SPEED_METER_BASE_SECONDS + solid * mirrorRef) return 3;
+  if (timeSeconds <= SPEED_METER_BASE_SECONDS + leisurely * mirrorRef) return 2;
+  return 1;
+}
+
+/**
+ * Accuracy meter, from misroute count (number tiles hit out of Target Code
+ * order):
+ *   5: 0–1 · 4: 2–4 · 3: 5–6 · 2: 7–8 · 1: 9+
+ */
+export function getAccuracyScore(wrongNumberHits: number): MeterScore {
+  if (wrongNumberHits <= 1) return 5;
+  if (wrongNumberHits <= 4) return 4;
+  if (wrongNumberHits <= 6) return 3;
+  if (wrongNumberHits <= 8) return 2;
+  return 1;
+}
+
+export type SpeedLabel = "Blazing" | "Fast" | "Steady" | "Relaxed" | "Unhurried";
+
+const SPEED_LABELS: Record<MeterScore, SpeedLabel> = {
+  5: "Blazing",
+  4: "Fast",
+  3: "Steady",
+  2: "Relaxed",
+  1: "Unhurried",
+};
+
+/**
+ * Player-facing pace word, mapped 1:1 from the five speed-meter scores so the
+ * label and the dots can never disagree. Positive-to-neutral across the whole
+ * range — never a negative label.
  */
 export function getSpeedLabel(puzzle: Puzzle, timeSeconds: number): SpeedLabel {
-  const fastest = getFastestSeconds(puzzle);
-  const good = getGoodSeconds(puzzle);
-  if (timeSeconds <= fastest) return "Blazing";
-  if (timeSeconds <= good) return "Fast";
-  if (timeSeconds <= good * 2) return "Steady";
-  return "Relaxed";
+  return SPEED_LABELS[getSpeedScore(puzzle, timeSeconds)];
 }
