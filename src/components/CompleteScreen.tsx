@@ -210,7 +210,7 @@ export default function CompleteScreen() {
           {/* Pace label derived from the puzzle's min-mirror floor: Blazing (≤
               fastest) · Fast (≤ good) · Steady (≤ 2×good) · Relaxed. */}
           <StatTile
-            label="SPEED"
+            label="SPEED LABEL"
             value={speedLabel}
             detail={`Fastest: ${formatTime(fastestSeconds)}`}
             accentValue={speedLabel === "Blazing"}

@@ -1,6 +1,10 @@
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getPuzzleById } from "@/data/puzzles";
-import { getMirrorEfficiency, getPuzzleStats } from "@/lib/puzzleStats";
+import {
+  getMirrorEfficiency,
+  getPuzzleStats,
+  getSpeedLabel,
+} from "@/lib/puzzleStats";
 import { productionSiteUrl } from "@/lib/site";
 import { formatTime } from "@/lib/validation";
 
@@ -58,12 +62,13 @@ function mirrorLine(puzzleId: number, mirrorsUsed: number): string {
 }
 
 /**
- * Fixed-size share text (no emoji grid). When the puzzle's exact minimum mirror
- * count is known, line 3 includes an efficiency figure; otherwise it lists the
- * mirror count alone.
+ * Fixed-size share text (no emoji grid). Line 2 pairs the completion time with
+ * the puzzle's speed label. When the puzzle's exact minimum mirror count is
+ * known, line 3 includes an efficiency figure; otherwise it lists the mirror
+ * count alone.
  *
  *   Lattice #022 · 8×8
- *   02:14
+ *   02:14 · Fast
  *   6 mirrors (min 4) · 67% efficient
  *   1 misroute
  *   https://playlattice.vercel.app
@@ -81,9 +86,13 @@ export function getShareText(
     ? `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`
     : `Lattice #${paddedId}`;
 
+  const timeLine = puzzle
+    ? `${formatTime(timeSeconds)} · ${getSpeedLabel(puzzle, timeSeconds)}`
+    : formatTime(timeSeconds);
+
   return [
     header,
-    formatTime(timeSeconds),
+    timeLine,
     mirrorLine(puzzleId, mirrorsUsed),
     pluralize(wrongNumberHits, "misroute"),
     productionSiteUrl,

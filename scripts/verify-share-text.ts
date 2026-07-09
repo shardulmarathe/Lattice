@@ -115,7 +115,7 @@ function verifyPuzzle(puzzle: Puzzle): string[] {
   if (lines[0] !== `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`) {
     issues.push(`share text header wrong: ${JSON.stringify(lines[0])}`);
   }
-  if (lines[1] !== "01:30") {
+  if (!/^01:30 · (Blazing|Fast|Steady|Relaxed)$/.test(lines[1] ?? "")) {
     issues.push(`share text time wrong: ${JSON.stringify(lines[1])}`);
   }
   if (!lines[2]?.startsWith("3 mirror")) {
