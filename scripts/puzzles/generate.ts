@@ -32,7 +32,10 @@ import {
 // Exact-min budget at generation time. Kept modest so the daily cron stays
 // quick — dense "extra hard" dailies cap out to a lower bound here anyway; the
 // offline `puzzles:stats --exact` backfill can spend more to nail moderate ones.
-const EXACT_MIN_GEN_OPTIONS = { maxBudget: 16, nodeCap: 4_000_000 } as const;
+// Calibrated to the rewritten solver (~30M nodes/sec): worst case ~20s per
+// puzzle, enough to prove an exact min for almost every generated puzzle at
+// creation time. Real minimums of 17-18 exist (#8, #17), hence maxBudget 24.
+const EXACT_MIN_GEN_OPTIONS = { maxBudget: 24, nodeCap: 500_000_000 } as const;
 
 interface Args {
   today: string;

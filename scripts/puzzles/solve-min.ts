@@ -14,10 +14,16 @@
  *     puzzle is ground down until solved.
  *   - Files are written after every puzzle, so a killed job never loses work.
  *
+ * PARALLEL SHARDS: `--shard=k/n` takes every n-th puzzle of the priority queue
+ * (offset k), and `--out-suffix=.shardK` redirects writes to suffixed copies of
+ * the stats/progress files so concurrent shard processes never race on the
+ * canonical files. merge-min-shards.ts folds the copies back in afterwards.
+ *
  * Usage:
  *   npm run puzzles:solve-min                 # 5h box, all unsolved by play date
  *   npm run puzzles:solve-min -- --minutes=30 # shorter box
  *   npm run puzzles:solve-min -- --ids=17,19  # only these puzzles
+ *   npm run puzzles:solve-min -- --shard=0/2 --out-suffix=.shard0   # CI shard
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -45,14 +51,23 @@ interface Progress {
 interface Args {
   minutes: number;
   ids: Set<number> | null;
+  shard: { index: number; count: number } | null;
+  outSuffix: string;
 }
 
 function parseArgs(): Args {
-  const args: Args = { minutes: 300, ids: null };
+  const args: Args = { minutes: 300, ids: null, shard: null, outSuffix: "" };
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith("--minutes=")) args.minutes = Number(arg.slice("--minutes=".length));
     else if (arg.startsWith("--ids="))
       args.ids = new Set(arg.slice("--ids=".length).split(",").map(Number));
+    else if (arg.startsWith("--shard=")) {
+      const [index, count] = arg.slice("--shard=".length).split("/").map(Number);
+      if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index >= count) {
+        throw new Error(`Invalid --shard=${arg.slice("--shard=".length)} (expected k/n with 0 ≤ k < n)`);
+      }
+      args.shard = { index, count };
+    } else if (arg.startsWith("--out-suffix=")) args.outSuffix = arg.slice("--out-suffix=".length);
   }
   return args;
 }
@@ -110,11 +125,20 @@ function sortKey(id: number): string {
 const queue = PUZZLES.map((p) => p.id)
   .filter((id) => (args.ids === null || args.ids.has(id)))
   .filter((id) => !initialProgress(id).solved)
-  .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+  // Shards deal the sorted queue round-robin, so each shard still works in
+  // priority order and shard 0 always holds the most imminent puzzle.
+  .filter((_, i) => args.shard === null || i % args.shard.count === args.shard.index);
+
+// Suffixed outputs let parallel shard processes write without racing; the merge
+// script folds them back into the canonical files.
+const statsOut = STATS_FILE + args.outSuffix;
+const progressOut = PROGRESS_FILE + args.outSuffix;
 
 const deadline = Date.now() + args.minutes * 60_000;
+const shardLabel = args.shard ? ` [shard ${args.shard.index}/${args.shard.count}]` : "";
 console.log(
-  `Solve-min: ${queue.length} unsolved puzzle(s) in queue, ${args.minutes}m budget.\n` +
+  `Solve-min${shardLabel}: ${queue.length} unsolved puzzle(s) in queue, ${args.minutes}m budget.\n` +
     `queue order: ${queue.join(", ") || "(none)"}\n`
 );
 
@@ -164,8 +188,8 @@ for (const id of queue) {
   }
 
   // Persist after every puzzle so a killed job keeps its progress.
-  writeOrdered(STATS_FILE, stats as Record<number, unknown>);
-  writeOrdered(PROGRESS_FILE, progress as Record<number, unknown>);
+  writeOrdered(statsOut, stats as Record<number, unknown>);
+  writeOrdered(progressOut, progress as Record<number, unknown>);
 
   if (res.aborted) {
     console.log("Deadline reached mid-search — stopping.");

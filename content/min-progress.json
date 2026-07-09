@@ -1,4 +1,8 @@
 {
+  "8": {
+    "solved": true,
+    "minMirrors": 17
+  },
   "11": {
     "solved": true,
     "minMirrors": 9
@@ -21,11 +25,11 @@
   },
   "17": {
     "solved": true,
-    "minMirrors": 18
+    "minMirrors": 16
   },
   "20": {
-    "solved": false,
-    "provenNoSolutionUpTo": 12
+    "solved": true,
+    "minMirrors": 15
   },
   "23": {
     "solved": true,

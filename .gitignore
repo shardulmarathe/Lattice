@@ -11,6 +11,11 @@
 # testing
 /coverage
 
+# solve-min parallel shard outputs (merged into the canonical files by
+# scripts/puzzles/merge-min-shards.ts, never committed directly)
+src/data/puzzleStats.json.shard*
+content/min-progress.json.shard*
+
 # next.js
 /.next/
 /out/

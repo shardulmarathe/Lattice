@@ -44,10 +44,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Solve exact min-mirrors (time-boxed, resumable)
-        run: npm run puzzles:solve-min -- --minutes=${{ github.event.inputs.minutes || '300' }}
+      # Two solver processes run in parallel (the runner has 4 vCPUs), each
+      # taking every 2nd puzzle of the priority queue, so one hard puzzle can't
+      # starve the rest of the backlog. Each writes to suffixed shard files;
+      # the merge step folds them back into the canonical files afterwards.
+      - name: Solve exact min-mirrors (2 parallel shards, time-boxed, resumable)
+        run: |
+          minutes="${{ github.event.inputs.minutes || '300' }}"
+          npm run puzzles:solve-min -- --minutes="$minutes" --shard=0/2 --out-suffix=.shard0 > shard0.log 2>&1 &
+          pid0=$!
+          npm run puzzles:solve-min -- --minutes="$minutes" --shard=1/2 --out-suffix=.shard1 > shard1.log 2>&1 &
+          pid1=$!
+          fail=0
+          wait "$pid0" || fail=1
+          wait "$pid1" || fail=1
+          echo "=== shard 0 ==="; cat shard0.log
+          echo "=== shard 1 ==="; cat shard1.log
+          exit "$fail"
+
+      # Run even if a shard crashed: the surviving shard's per-puzzle writes are
+      # still valid proofs and must not be lost.
+      - name: Merge shard results
+        if: always()
+        run: npm run puzzles:merge-min
 
       - name: Commit and push if changed
+        if: always()
         run: |
           git add src/data/puzzleStats.json content/min-progress.json
           if git diff --cached --quiet; then
