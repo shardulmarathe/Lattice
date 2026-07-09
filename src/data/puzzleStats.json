@@ -48,7 +48,7 @@
     "minMirrors": 12
   },
   "17": {
-    "minMirrorsAtLeast": 14
+    "minMirrors": 18
   },
   "18": {
     "minMirrors": 4
