@@ -57,6 +57,33 @@ function StatTile({
   );
 }
 
+/** Live HH:MM:SS until local midnight, when the next daily puzzle unlocks. */
+function useNextPuzzleCountdown(): string {
+  const compute = () => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const totalSeconds = Math.max(
+      0,
+      Math.floor((midnight.getTime() - now.getTime()) / 1000)
+    );
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+
+  const [countdown, setCountdown] = useState(compute);
+
+  useEffect(() => {
+    const interval = setInterval(() => setCountdown(compute()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return countdown;
+}
+
 function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
   const puzzleParam = searchParams.get("puzzle");
   if (puzzleParam !== null) {
@@ -90,6 +117,7 @@ export default function CompleteScreen() {
   const playRoute = isDaily ? "/play" : `/play?puzzle=${puzzle.id}`;
   const replayRoute = `${playRoute}${playRoute.includes("?") ? "&" : "?"}replay=1`;
 
+  const countdown = useNextPuzzleCountdown();
   const [copied, setCopied] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
@@ -201,7 +229,7 @@ export default function CompleteScreen() {
             accentValue={efficiency === 100}
           />
           <StatTile
-            label="MISROUTES"
+            label="MISTAKES"
             value={wrongNumberHits}
             detail={wrongNumberHits === 0 ? "clean run" : null}
             accentValue={wrongNumberHits > 0}
@@ -215,6 +243,13 @@ export default function CompleteScreen() {
             detail={`Fastest: ${formatTime(fastestSeconds)}`}
             accentValue={speedLabel === "Blazing"}
           />
+        </div>
+
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-xs tracking-[0.2em] text-white/40">
+            NEXT DAILY PUZZLE
+          </span>
+          <span className="font-mono text-xl text-white">{countdown}</span>
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-4">
