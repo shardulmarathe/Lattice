@@ -118,8 +118,8 @@ export function getSpeedScore(puzzle: Puzzle, timeSeconds: number): MeterScore {
 }
 
 /**
- * Accuracy meter, from misroute count (number tiles hit out of Target Code
- * order):
+ * Accuracy meter, from mistake count (wrong-number collections + premature
+ * flag hits):
  *   5: 0–1 · 4: 2–4 · 3: 5–6 · 2: 7–8 · 1: 9+
  */
 export function getAccuracyScore(wrongNumberHits: number): MeterScore {

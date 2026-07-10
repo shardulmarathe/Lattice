@@ -249,17 +249,24 @@ export default function GameScreen() {
     [puzzle.code, board, laserResult.visitedCells]
   );
 
-  // Passive misroute tracking: count each number tile the laser collects out of
-  // Target Code order at most once per session. Never decrements when mirrors
-  // change — only reset on clear-board / a fresh (replay) session. Seeded on
-  // first run so a mid-solve reload doesn't recount misroutes already persisted.
+  // Passive mistake tracking: wrong number tiles + premature flag hits.
+  // Never decrements when mirrors change — only reset on clear-board / a fresh
+  // (replay) session. Seeded on first run so a mid-solve reload doesn't recount
+  // mistakes already persisted.
   const countedWrongKeysRef = useRef<Set<string>>(new Set());
+  const wasEarlyFlagRef = useRef(false);
   const wrongInitRef = useRef(false);
+
+  const isEarlyFlagMistake =
+    laserResult.reachedFlag &&
+    validation.generatedSequence !== puzzle.code &&
+    !validation.isComplete;
 
   useEffect(() => {
     if (!wrongInitRef.current) {
       wrongInitRef.current = true;
       countedWrongKeysRef.current = new Set(incorrectKeys);
+      wasEarlyFlagRef.current = isEarlyFlagMistake;
       return;
     }
 
@@ -270,10 +277,17 @@ export default function GameScreen() {
         newlyWrong += 1;
       }
     }
+
+    // Count each time the path newly reaches the flag before the code is done.
+    if (isEarlyFlagMistake && !wasEarlyFlagRef.current) {
+      newlyWrong += 1;
+    }
+    wasEarlyFlagRef.current = isEarlyFlagMistake;
+
     if (newlyWrong > 0) {
       setWrongNumberHits((count) => count + newlyWrong);
     }
-  }, [incorrectKeys]);
+  }, [incorrectKeys, isEarlyFlagMistake]);
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -306,9 +320,10 @@ export default function GameScreen() {
   const handleClearBoard = useCallback(() => {
     if (isComplete) return;
     setMirrors([]);
-    // Clearing the board resets the session misroute counter.
+    // Clearing the board resets the session mistake counter.
     setWrongNumberHits(0);
     countedWrongKeysRef.current = new Set();
+    wasEarlyFlagRef.current = false;
   }, [isComplete]);
 
   const handlePause = useCallback(() => {

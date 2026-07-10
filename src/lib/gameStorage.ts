@@ -9,8 +9,8 @@ export interface SavedGameState {
   isViewingSolve: boolean;
   isPaused: boolean;
   /**
-   * Passive stat: times the laser collected a number tile out of Target Code
-   * order this session ("misroutes"). Counting only — no effect on win/time.
+   * Mistakes this session: wrong-number collections + premature flag hits.
+   * Counting only — no effect on win/time.
    */
   wrongNumberHits: number;
 }

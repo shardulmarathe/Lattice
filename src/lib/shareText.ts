@@ -115,7 +115,7 @@ export function getEfficiencyDetail(
   return `+${pluralize(above, "Mirror")} Above Optimal`;
 }
 
-/** Accuracy detail: misroutes surfaced in plain language. */
+/** Accuracy detail: mistakes (wrong numbers + early flag) in plain language. */
 export function getAccuracyDetail(wrongNumberHits: number): string {
   return pluralize(wrongNumberHits, "Mistake");
 }
