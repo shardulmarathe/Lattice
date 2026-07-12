@@ -10,10 +10,12 @@ import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
 import {
+  getEfficiencyScore,
   getMirrorEfficiency,
   getPuzzleStats,
   getFastestSeconds,
   getSpeedLabel,
+  getSpeedScore,
 } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
 
@@ -123,6 +125,7 @@ export default function CompleteScreen() {
   const [timeSeconds, setTimeSeconds] = useState(0);
   const [mirrorsUsed, setMirrorsUsed] = useState(0);
   const [wrongNumberHits, setWrongNumberHits] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
 
   useEffect(() => {
     const saved = loadGameState(puzzle.id, isPractice ? "practice" : "record");
@@ -134,19 +137,25 @@ export default function CompleteScreen() {
     setTimeSeconds(saved.completionSeconds);
     setMirrorsUsed(saved.mirrors.length);
     setWrongNumberHits(saved.wrongNumberHits);
+    setHintsUsed(saved.hintsUsed);
     setIsReady(true);
   }, [puzzle.id, router, playRoute, isPractice]);
 
   // Text the SHARE button copies to the clipboard (revealed only when pasted).
   const shareText = useMemo(
-    () => getShareText(puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits),
-    [puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits]
+    () =>
+      getShareText(puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits, hintsUsed),
+    [puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits, hintsUsed]
   );
 
   const efficiency = getMirrorEfficiency(puzzle.id, mirrorsUsed);
   const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
   const speedLabel = getSpeedLabel(puzzle, timeSeconds);
   const fastestSeconds = getFastestSeconds(puzzle);
+  // Red = bad, everywhere on the grid: a weak meter score (same 1–5 scores the
+  // share dots use, so screen and share can't disagree), or a nonzero counter.
+  const efficiencyScore = getEfficiencyScore(puzzle.id, mirrorsUsed);
+  const speedScore = getSpeedScore(puzzle, timeSeconds);
 
   const handleSeeSolve = useCallback(() => {
     const saved = loadGameState(puzzle.id);
@@ -216,17 +225,25 @@ export default function CompleteScreen() {
           </svg>
         </motion.div>
 
+        {/* Top row: performance meters. Bottom row: counters that cost you. */}
         <div className="grid w-full grid-cols-2 gap-3">
-          <StatTile label="MIRRORS USED" value={mirrorsUsed} big />
           <StatTile
             label="MIRROR EFFICIENCY"
             value={efficiency !== null ? `${efficiency}%` : "—"}
             detail={
               minMirrors !== undefined
-                ? `Least: ${minMirrors} mirror${minMirrors === 1 ? "" : "s"}`
+                ? `${mirrorsUsed} used · min ${minMirrors}`
                 : null
             }
-            accentValue={efficiency === 100}
+            accentValue={efficiencyScore !== null && efficiencyScore <= 3}
+          />
+          {/* Pace label mapped 1:1 from the speed-meter score, which bands on
+              seconds per required mirror (see getSpeedScore). */}
+          <StatTile
+            label="SPEED LABEL"
+            value={speedLabel}
+            detail={`Fastest: ${formatTime(fastestSeconds)}`}
+            accentValue={speedScore <= 2}
           />
           <StatTile
             label="MISTAKES"
@@ -235,13 +252,12 @@ export default function CompleteScreen() {
             accentValue={wrongNumberHits > 0}
             big
           />
-          {/* Pace label mapped 1:1 from the speed-meter score, which bands on
-              seconds per required mirror (see getSpeedScore). */}
           <StatTile
-            label="SPEED LABEL"
-            value={speedLabel}
-            detail={`Fastest: ${formatTime(fastestSeconds)}`}
-            accentValue={speedLabel === "Blazing"}
+            label="HINTS USED"
+            value={hintsUsed}
+            detail={hintsUsed === 0 ? "solo solve" : null}
+            accentValue={hintsUsed > 0}
+            big
           />
         </div>
 
