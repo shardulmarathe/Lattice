@@ -16,8 +16,13 @@ const geistMono = Geist_Mono({
 
 const siteUrl = getSiteUrl();
 
-// og:image is a screenshot of the live homepage, regenerated on every deploy by
-// scripts/capture-og.mjs -> public/og-home.png (see package.json build).
+// Platforms cache og:image per-URL; versioning with the deploy SHA makes new
+// shares fetch the latest screenshot instead of a stale cached one.
+const ogImage = `/og-home.png?v=${(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 8)}`;
+
+// og:image is a screenshot of the homepage, regenerated after every push by
+// .github/workflows/og-refresh.yml -> public/og-home.png (committed by CI;
+// headless Chrome can't run in Vercel's build container).
 export const metadata: Metadata = {
   title: siteConfig.title,
   description: siteConfig.description,
@@ -29,13 +34,13 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     type: "website",
     locale: "en_US",
-    images: [{ url: "/og-home.png", width: 1200, height: 630, alt: siteConfig.title }],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: siteConfig.title }],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: ["/og-home.png"],
+    images: [ogImage],
   },
 };
 

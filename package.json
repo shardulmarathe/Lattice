@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "og": "node scripts/capture-og.mjs",
-    "build": "node scripts/capture-og.mjs && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "puzzles:generate": "tsx scripts/puzzles/generate.ts",
