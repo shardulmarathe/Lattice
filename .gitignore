@@ -15,6 +15,7 @@
 # scripts/puzzles/merge-min-shards.ts, never committed directly)
 src/data/puzzleStats.json.shard*
 content/min-progress.json.shard*
+src/data/puzzleSolutions.json.shard*
 
 # next.js
 /.next/

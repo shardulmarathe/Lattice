@@ -20,7 +20,9 @@
 
 import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import type { MirrorPlacement } from "../../src/lib/puzzleTypes";
 import { REPO_ROOT } from "./codegen";
+import { SOLUTIONS_FILE, mergeSolution } from "./solutionsStore";
 
 const STATS_FILE = join(REPO_ROOT, "src", "data", "puzzleStats.json");
 const PROGRESS_FILE = join(REPO_ROOT, "content", "min-progress.json");
@@ -125,9 +127,16 @@ function mergeFile<T>(
 
 const statShards = mergeFile<Stat>(STATS_FILE, mergeStat);
 const progressShards = mergeFile<Progress>(PROGRESS_FILE, mergeProgress);
+// Canonical witnesses: fewer mirrors wins; equal length keeps the existing
+// witness so equal re-solves never churn the file.
+const solutionShards = mergeFile<MirrorPlacement[]>(SOLUTIONS_FILE, (base, next) =>
+  mergeSolution(base, next)
+);
 
-if (statShards === 0 && progressShards === 0) {
+if (statShards === 0 && progressShards === 0 && solutionShards === 0) {
   console.log("No shard files found — nothing to merge.");
 } else {
-  console.log(`Done: merged ${statShards} stats shard(s), ${progressShards} progress shard(s).`);
+  console.log(
+    `Done: merged ${statShards} stats shard(s), ${progressShards} progress shard(s), ${solutionShards} solutions shard(s).`
+  );
 }

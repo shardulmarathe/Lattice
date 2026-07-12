@@ -7,11 +7,14 @@ interface HeaderProps {
   onRules: () => void;
   onPause: () => void;
   onClear: () => void;
+  /** When absent, the HINT button is hidden (no solution data for the puzzle). */
+  onHint?: () => void;
+  hintDisabled?: boolean;
   disabled?: boolean;
 }
 
 const buttonBase =
-  "bg-transparent px-2 py-1.5 text-[0.72rem] tracking-[0.1em] text-white/88 transition-colors outline-none focus:outline-none focus-visible:outline-none hover:text-white disabled:cursor-not-allowed disabled:text-white/38 sm:px-3 sm:text-[0.83rem] sm:tracking-[0.15em] md:px-4 md:py-2 md:text-[0.97rem] [-webkit-tap-highlight-color:transparent]";
+  "bg-transparent px-1.5 py-1.5 text-[0.72rem] tracking-[0.1em] text-white/88 transition-colors outline-none focus:outline-none focus-visible:outline-none hover:text-white disabled:cursor-not-allowed disabled:text-white/38 sm:px-3 sm:text-[0.83rem] sm:tracking-[0.15em] md:px-4 md:py-2 md:text-[0.97rem] [-webkit-tap-highlight-color:transparent]";
 
 const navButtonClass = `${buttonBase} border border-transparent active:border-transparent`;
 
@@ -22,6 +25,8 @@ export default function Header({
   onRules,
   onPause,
   onClear,
+  onHint,
+  hintDisabled = false,
   disabled = false,
 }: HeaderProps) {
   return (
@@ -37,6 +42,15 @@ export default function Header({
         >
           RESET
         </button>
+        {onHint && (
+          <button
+            onClick={onHint}
+            disabled={disabled || hintDisabled}
+            className={navButtonClass}
+          >
+            HINT
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4">

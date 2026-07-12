@@ -20,6 +20,12 @@ import { PUZZLE_SCHEDULE } from "@/data/schedule";
 import { generatePuzzle, puzzleHash } from "./generator";
 import { solveExactMin } from "./exactMin";
 import {
+  SOLUTIONS_FILE,
+  mergeSolution,
+  readSolutions,
+  writeSolutionsOrdered,
+} from "./solutionsStore";
+import {
   REPO_ROOT,
   readScheduleJson,
   writeDraftFile,
@@ -131,6 +137,17 @@ function main(): void {
             : `≥${exact.minMirrorsAtLeast}`
         } (${exact.nodes.toLocaleString()} nodes${exact.proven ? "" : ", node-capped"})`
       );
+
+      // Ship the proven-minimal witness so the new daily has HINT support
+      // from day one; unproven puzzles are picked up by the nightly solver.
+      if (exact.minMirrors !== undefined && exact.solution) {
+        const solutions = readSolutions();
+        const merged = mergeSolution(solutions[id], exact.solution);
+        if (merged) {
+          solutions[id] = merged;
+          writeSolutionsOrdered(SOLUTIONS_FILE, solutions);
+        }
+      }
 
       writeDraftFile(puzzle, dateKey, generated);
       writeSolutionSidecar({

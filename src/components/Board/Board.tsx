@@ -20,6 +20,7 @@ import SourceTile from "./SourceTile";
 import LaserPath from "../Laser/LaserPath";
 import FlagVictoryLaser from "../Laser/FlagVictoryLaser";
 import MirrorTile from "../Mirror/MirrorTile";
+import TapRipple from "../HowToPlay/TapRipple";
 
 interface BoardProps {
   puzzle: Puzzle;
@@ -33,6 +34,8 @@ interface BoardProps {
   showVictoryLaser?: boolean;
   maxBoardWidth?: number;
   maxBoardHeight?: number;
+  /** One-shot ripple on the cell a hint just acted on; replays per key. */
+  hintFlash?: { key: number; x: number; y: number } | null;
 }
 
 // The largest a cell should ever grow on a spacious desktop viewport. Below
@@ -80,6 +83,7 @@ export default function Board({
   showVictoryLaser = false,
   maxBoardWidth,
   maxBoardHeight,
+  hintFlash = null,
 }: BoardProps) {
   const [cellSize, setCellSize] = useState(() =>
     computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight)
@@ -209,6 +213,15 @@ export default function Board({
           flagY={puzzle.flag.y}
           cellSize={cellSize}
           boardSize={boardSize}
+        />
+      )}
+
+      {hintFlash && (
+        <TapRipple
+          key={hintFlash.key}
+          cellSize={cellSize}
+          cellX={hintFlash.x}
+          cellY={hintFlash.y}
         />
       )}
     </div>

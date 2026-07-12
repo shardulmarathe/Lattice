@@ -71,7 +71,7 @@ jobs:
       - name: Commit and push if changed
         if: always()
         run: |
-          git add src/data/puzzleStats.json content/min-progress.json
+          git add src/data/puzzleStats.json content/min-progress.json src/data/puzzleSolutions.json
           if git diff --cached --quiet; then
             echo "No min-mirror changes this run. Nothing to commit."
             exit 0

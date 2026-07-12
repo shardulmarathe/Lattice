@@ -32,6 +32,12 @@ import { PUZZLES } from "@/data/puzzles";
 import { emptyCells } from "./grader";
 import { solveExactMin } from "./exactMin";
 import { REPO_ROOT } from "./codegen";
+import {
+  SOLUTIONS_FILE,
+  mergeSolution,
+  readSolutions,
+  writeSolutionsOrdered,
+} from "./solutionsStore";
 
 const STATS_FILE = join(REPO_ROOT, "src", "data", "puzzleStats.json");
 const PROGRESS_FILE = join(REPO_ROOT, "content", "min-progress.json");
@@ -92,6 +98,7 @@ function writeOrdered(file: string, map: Record<number, unknown>): void {
 const args = parseArgs();
 const stats = readJson<Record<number, Stat>>(STATS_FILE, {});
 const progress = readJson<Record<number, Progress>>(PROGRESS_FILE, {});
+const solutions = readSolutions();
 const schedule = readJson<Record<string, number>>(SCHEDULE_FILE, {});
 
 // id → earliest scheduled play date.
@@ -134,6 +141,7 @@ const queue = PUZZLES.map((p) => p.id)
 // script folds them back into the canonical files.
 const statsOut = STATS_FILE + args.outSuffix;
 const progressOut = PROGRESS_FILE + args.outSuffix;
+const solutionsOut = SOLUTIONS_FILE + args.outSuffix;
 
 const deadline = Date.now() + args.minutes * 60_000;
 const shardLabel = args.shard ? ` [shard ${args.shard.index}/${args.shard.count}]` : "";
@@ -168,6 +176,10 @@ for (const id of queue) {
   if (res.minMirrors !== undefined) {
     progress[id] = { solved: true, minMirrors: res.minMirrors };
     stats[id] = { minMirrors: res.minMirrors };
+    if (res.solution) {
+      const merged = mergeSolution(solutions[id], res.solution);
+      if (merged) solutions[id] = merged;
+    }
     solvedThisRun++;
     console.log(
       `#${id} (${date}) SOLVED: min ${res.minMirrors}  (resumed@${startBudget}, ${secs}s, ${res.nodes.toLocaleString()} nodes)`
@@ -190,6 +202,7 @@ for (const id of queue) {
   // Persist after every puzzle so a killed job keeps its progress.
   writeOrdered(statsOut, stats as Record<number, unknown>);
   writeOrdered(progressOut, progress as Record<number, unknown>);
+  writeSolutionsOrdered(solutionsOut, solutions);
 
   if (res.aborted) {
     console.log("Deadline reached mid-search — stopping.");

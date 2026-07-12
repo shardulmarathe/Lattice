@@ -13,6 +13,8 @@ export interface SavedGameState {
    * Counting only — no effect on win/time.
    */
   wrongNumberHits: number;
+  /** HINT button presses this session. Counting only — no penalty. */
+  hintsUsed: number;
 }
 
 /**
@@ -55,9 +57,10 @@ export function loadGameState(
       isComplete: Boolean(parsed.isComplete),
       isViewingSolve: Boolean(parsed.isViewingSolve),
       isPaused: Boolean(parsed.isPaused),
-      // Backward-compatible: old saves predate this field.
+      // Backward-compatible: old saves predate these fields.
       wrongNumberHits:
         typeof parsed.wrongNumberHits === "number" ? parsed.wrongNumberHits : 0,
+      hintsUsed: typeof parsed.hintsUsed === "number" ? parsed.hintsUsed : 0,
     };
   } catch {
     return null;
@@ -100,6 +103,7 @@ export function createDefaultGameState(puzzleId: number): SavedGameState {
     isViewingSolve: false,
     isPaused: false,
     wrongNumberHits: 0,
+    hintsUsed: 0,
   };
 }
 

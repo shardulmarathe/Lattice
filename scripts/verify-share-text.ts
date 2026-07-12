@@ -162,6 +162,27 @@ function verifyPuzzle(puzzle: Puzzle): string[] {
     }
   }
 
+  // Hinted solves disclose the count on the header line and change nothing
+  // else; the 0-hint share (asserted above) stays byte-identical.
+  const hintedShare = getShareText(puzzle.id, 90, mirrorsUsed, 1, 2);
+  const hintedLines = hintedShare.split("\n");
+  if (hintedLines.length !== 7) {
+    issues.push(`hinted share expected 7 lines, got ${hintedLines.length}`);
+  }
+  if (
+    hintedLines[0] !==
+    `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize} · 2 hints`
+  ) {
+    issues.push(`hinted share header wrong: ${JSON.stringify(hintedLines[0])}`);
+  }
+  if (hintedLines.slice(1).join("\n") !== lines.slice(1).join("\n")) {
+    issues.push("hinted share should differ from unhinted only in the header");
+  }
+  const singleHint = getShareText(puzzle.id, 90, mirrorsUsed, 1, 1).split("\n")[0];
+  if (!singleHint?.endsWith("· 1 hint")) {
+    issues.push(`singular hint header wrong: ${JSON.stringify(singleHint)}`);
+  }
+
   return issues;
 }
 

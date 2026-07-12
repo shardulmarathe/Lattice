@@ -21,6 +21,8 @@ import {
 } from "@/lib/gameStorage";
 import type { MirrorPlacement, Puzzle } from "@/lib/puzzleTypes";
 import { validateSequence, formatTime, getNumberTileStates } from "@/lib/validation";
+import { getPuzzleSolution } from "@/lib/puzzleSolutions";
+import { applyHint, getNextHint } from "@/lib/hints";
 import Board from "@/components/Board/Board";
 import Header from "@/components/Header/Header";
 import WarningBanner from "@/components/Header/WarningBanner";
@@ -101,6 +103,12 @@ export default function GameScreen() {
 
   const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
   const [wrongNumberHits, setWrongNumberHits] = useState(saved.wrongNumberHits);
+  const [hintsUsed, setHintsUsed] = useState(saved.hintsUsed);
+  const [hintFlash, setHintFlash] = useState<{
+    key: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
   const isViewingSolve = saved.isViewingSolve;
   const [savedComplete, setSavedComplete] = useState(saved.isComplete);
@@ -159,6 +167,7 @@ export default function GameScreen() {
         isViewingSolve: overrides.isViewingSolve ?? isViewingSolve,
         isPaused: overrides.isPaused ?? isPaused,
         wrongNumberHits: overrides.wrongNumberHits ?? wrongNumberHits,
+        hintsUsed: overrides.hintsUsed ?? hintsUsed,
       };
 
       saveGameState(state, mode);
@@ -172,6 +181,7 @@ export default function GameScreen() {
       isViewingSolve,
       isPaused,
       wrongNumberHits,
+      hintsUsed,
       mode,
     ]
   );
@@ -185,6 +195,7 @@ export default function GameScreen() {
     isViewingSolve,
     isComplete,
     wrongNumberHits,
+    hintsUsed,
     persistState,
   ]);
 
@@ -207,6 +218,7 @@ export default function GameScreen() {
         isViewingSolve: false,
         isPaused,
         wrongNumberHits,
+        hintsUsed,
       },
       mode
     );
@@ -218,6 +230,7 @@ export default function GameScreen() {
     mirrors,
     isPaused,
     wrongNumberHits,
+    hintsUsed,
     mode,
   ]);
 
@@ -320,11 +333,66 @@ export default function GameScreen() {
   const handleClearBoard = useCallback(() => {
     if (isComplete) return;
     setMirrors([]);
-    // Clearing the board resets the session mistake counter.
+    // Clearing the board resets the session mistake and hint counters.
     setWrongNumberHits(0);
+    setHintsUsed(0);
     countedWrongKeysRef.current = new Set();
     wasEarlyFlagRef.current = false;
   }, [isComplete]);
+
+  // Canonical proven-minimal solution, when one has shipped for this puzzle.
+  const solutionMirrors = useMemo(
+    () => getPuzzleSolution(puzzle.id),
+    [puzzle.id]
+  );
+
+  const nextHint = useMemo(
+    () =>
+      solutionMirrors && !isComplete
+        ? getNextHint(puzzle, solutionMirrors, mirrors)
+        : null,
+    [puzzle, solutionMirrors, mirrors, isComplete]
+  );
+
+  const handleHint = useCallback(() => {
+    if (isPaused || isComplete || gameplayLocked || isViewingSolve) return;
+    if (!nextHint) return;
+
+    const next = applyHint(mirrors, nextHint);
+
+    // Pre-seed the passive mistake tracker with whatever the hinted board
+    // produces, so a hint can never be charged as a player mistake (solution
+    // mirrors placed in beam order can transiently route into a wrong number
+    // or the flag).
+    const nextLaser = calculateLaserPath(puzzle, next);
+    const { incorrectKeys: nextIncorrect } = getNumberTileStates(
+      puzzle.code,
+      buildBoard(puzzle, next),
+      nextLaser.visitedCells
+    );
+    for (const key of nextIncorrect) countedWrongKeysRef.current.add(key);
+    const nextValidation = validateSequence(puzzle.code, nextLaser);
+    wasEarlyFlagRef.current =
+      nextLaser.reachedFlag &&
+      nextValidation.generatedSequence !== puzzle.code &&
+      !nextValidation.isComplete;
+
+    setMirrors(next);
+    setHintsUsed((h) => h + 1);
+    setHintFlash({
+      key: Date.now(),
+      x: nextHint.mirror.x,
+      y: nextHint.mirror.y,
+    });
+  }, [
+    isPaused,
+    isComplete,
+    gameplayLocked,
+    isViewingSolve,
+    nextHint,
+    mirrors,
+    puzzle,
+  ]);
 
   const handlePause = useCallback(() => {
     setIsPaused((p) => !p);
@@ -422,6 +490,10 @@ export default function GameScreen() {
         onRules={handleRules}
         onPause={handlePause}
         onClear={handleClearBoard}
+        onHint={
+          solutionMirrors && !isViewingSolve ? handleHint : undefined
+        }
+        hintDisabled={nextHint === null || isPaused}
         disabled={isComplete || gameplayLocked}
       />
 
@@ -460,6 +532,7 @@ export default function GameScreen() {
               showVictoryLaser={showVictoryLaser}
               maxBoardWidth={boardSlotSize.width}
               maxBoardHeight={boardSlotSize.height}
+              hintFlash={hintFlash}
             />
           </div>
         </div>

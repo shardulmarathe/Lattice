@@ -131,19 +131,28 @@ export function getAccuracyDetail(wrongNumberHits: number): string {
  *   Accuracy    🔴🔴🔴🔴🔴   0 Mistakes
  *
  *   https://playlattice.vercel.app
+ *
+ * Hinted solves disclose it on the header line ("Lattice #017 · 9×9 · 2
+ * hints") — a hinted board can score Optimal efficiency, so the qualifier
+ * belongs on the whole card. Zero hints leaves the share byte-identical to
+ * the unhinted format.
  */
 export function getShareText(
   puzzleId: number,
   timeSeconds: number,
   mirrorsUsed: number,
-  wrongNumberHits: number
+  wrongNumberHits: number,
+  hintsUsed: number = 0
 ): string {
   const puzzle = getSharePuzzle(puzzleId);
   const paddedId = String(puzzleId).padStart(3, "0");
 
-  const header = puzzle
-    ? `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`
-    : `Lattice #${paddedId}`;
+  const hintsSuffix =
+    hintsUsed > 0 ? ` · ${pluralize(hintsUsed, "hint")}` : "";
+  const header =
+    (puzzle
+      ? `Lattice #${paddedId} · ${puzzle.gridSize}×${puzzle.gridSize}`
+      : `Lattice #${paddedId}`) + hintsSuffix;
 
   // Every registered puzzle has a proven exact minimum, so the efficiency
   // score is always available in practice; 3 dots is a neutral fallback for

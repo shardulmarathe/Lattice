@@ -27,6 +27,12 @@ import { PUZZLES } from "@/data/puzzles";
 import { grade } from "./grader";
 import { solveExactMin } from "./exactMin";
 import { REPO_ROOT } from "./codegen";
+import {
+  SOLUTIONS_FILE,
+  mergeSolution,
+  readSolutions,
+  writeSolutionsOrdered,
+} from "./solutionsStore";
 
 const SOLUTIONS_DIR = join(REPO_ROOT, "content", "solutions");
 const STATS_FILE = join(REPO_ROOT, "src", "data", "puzzleStats.json");
@@ -148,6 +154,14 @@ for (const puzzle of PUZZLES) {
     const secs = ((Date.now() - t0) / 1000).toFixed(1);
     if (res.minMirrors !== undefined) {
       stat = { minMirrors: res.minMirrors };
+      if (res.solution) {
+        const solutions = readSolutions();
+        const merged = mergeSolution(solutions[id], res.solution);
+        if (merged) {
+          solutions[id] = merged;
+          writeSolutionsOrdered(SOLUTIONS_FILE, solutions);
+        }
+      }
     } else {
       // A time/node-limited run can return a weaker bound than one already
       // recorded — never let it lower the best-known lower bound.
