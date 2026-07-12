@@ -470,7 +470,7 @@ export default function GameScreen() {
           <p className="mt-3 text-center text-xs tracking-wider text-white/70 md:mt-6 md:text-sm">
             {isViewingSolve
               ? "Your solution — mirrors locked."
-              : "Click on laser to place mirror to redirect it. Click again to rotate or remove mirror. Lasers may intersect each other."}
+              : "Place a mirror on the laser to redirect it — tap again to rotate or remove it. Lasers can cross paths and pass through the source."}
           </p>
 
           {!isViewingSolve && (

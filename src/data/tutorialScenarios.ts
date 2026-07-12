@@ -1,102 +1,190 @@
-import type { MirrorPlacement, Puzzle } from "@/lib/puzzleTypes";
+import type { MirrorPlacement, Position, Puzzle } from "@/lib/puzzleTypes";
+
+export interface TutorialTap {
+  /** Loop-relative time at which the tap ripple fires. */
+  atMs: number;
+  cell: Position;
+}
+
+/**
+ * One beam pass within a demo loop. A scenario with two phases first draws
+ * the phase-1 beam (e.g. straight, mirror-less), holds it, then switches to
+ * the phase-2 mirror set and redraws — showing cause and effect.
+ */
+export interface TutorialPhase {
+  /** Loop-relative time at which this phase's beam starts drawing. */
+  startMs: number;
+  drawMs: number;
+  /** Full mirror set active during this phase. */
+  mirrors: MirrorPlacement[];
+  /** Linear reads better on long paths; default eases out. */
+  easing?: "easeOutCubic" | "linear";
+  /** Flash the flag red once the beam completes (early-flag mistake). */
+  flagIncorrectOnHold?: boolean;
+  /** Victory-mode beam; the ring fires when the draw completes. */
+  victory?: boolean;
+}
 
 export interface TutorialScenario {
   id: string;
+  title: string;
   caption: string;
+  cellSize: number;
   puzzle: Puzzle;
-  mirrors: MirrorPlacement[];
-  /** drawProgress (0–1) at which number glow / victory ring activates */
-  effectThreshold: number;
-  showVictoryLaser: boolean;
-  /**
-   * When true, each loop first draws the beam with no mirrors and holds it
-   * fully extended, then places the mirrors and draws the redirected beam —
-   * showing the placement causing the redirect. Every demo runs the same
-   * total loop (others hold their finished beam through the extra phases),
-   * so all examples stay in sync.
-   */
-  placeMirrorMidLoop?: boolean;
+  phases: TutorialPhase[];
+  taps?: TutorialTap[];
 }
 
-const TUTORIAL_PUZZLE_BASE = {
+/**
+ * Every demo runs the same total loop so they all reset in sync. Beams and
+ * effects blank at TUTORIAL_RESET_AT_MS, then the loop restarts.
+ */
+export const TUTORIAL_LOOP_MS = 4800;
+export const TUTORIAL_RESET_AT_MS = 4400;
+export const TAP_RIPPLE_MS = 450;
+
+/** Demo boards render this much larger on md+ screens. */
+export const TUTORIAL_DESKTOP_CELL_SCALE = 1.25;
+
+/** The bespoke tap-to-place demo (no puzzle or laser — see MirrorCycleDemo). */
+export const MIRROR_CYCLE_SECTION = {
+  title: "PLACE MIRRORS",
+  caption:
+    "Tap an empty square to place a mirror. Tap again to rotate it. Tap a third time to remove it.",
+  cellSize: 44,
   gridSize: 2,
-  obstacles: [] as { x: number; y: number }[],
-};
+  cell: { x: 1, y: 0 } as Position,
+  tapsAtMs: [600, 1800, 3000],
+  /** The mirror state changes this long after each tap ripple starts. */
+  stateDelayMs: 120,
+} as const;
 
 export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
   {
-    id: "mirror",
-    caption: "Place a mirror on the laser to redirect it.",
+    id: "redirect",
+    title: "REDIRECT THE LASER",
+    caption: "Mirrors redirect the laser toward the target code.",
+    cellSize: 44,
     puzzle: {
       id: 9001,
       code: "",
-      ...TUTORIAL_PUZZLE_BASE,
-      source: { x: 0, y: 1, direction: "up" },
-      flag: { x: 1, y: 1 },
+      gridSize: 2,
+      obstacles: [],
+      source: { x: 0, y: 1, direction: "right" },
+      flag: { x: 0, y: 0 },
       numbers: [],
     },
-    mirrors: [{ x: 0, y: 0, orientation: "/" }],
-    effectThreshold: 1,
-    showVictoryLaser: false,
-    placeMirrorMidLoop: true,
+    phases: [
+      { startMs: 0, drawMs: 500, mirrors: [] },
+      {
+        startMs: 1250,
+        drawMs: 700,
+        mirrors: [{ x: 1, y: 1, orientation: "/" }],
+      },
+    ],
+    taps: [{ atMs: 1100, cell: { x: 1, y: 1 } }],
   },
   {
-    id: "correct-number",
-    caption: "Collect numbers in target-code order.",
+    id: "collect",
+    title: "COLLECT THE CODE",
+    caption:
+      "Collect every number in the target code, in order. Hitting one out of order breaks the code — reroute to avoid it.",
+    cellSize: 36,
     puzzle: {
       id: 9002,
-      code: "3",
-      ...TUTORIAL_PUZZLE_BASE,
-      source: { x: 0, y: 1, direction: "right" },
+      code: "35",
+      gridSize: 3,
+      obstacles: [],
+      source: { x: 0, y: 2, direction: "right" },
       flag: { x: 0, y: 0 },
-      numbers: [{ x: 1, y: 1, value: 3 }],
+      numbers: [
+        { x: 1, y: 1, value: 3 },
+        { x: 2, y: 2, value: 5 },
+      ],
     },
-    mirrors: [],
-    effectThreshold: 0.85,
-    showVictoryLaser: false,
+    phases: [
+      // Straight beam hits the 5 before the 3 — wrong order, flashes red.
+      { startMs: 0, drawMs: 700, mirrors: [] },
+      // Rerouted around the wrong-order hit: 3 first, then 5.
+      {
+        startMs: 1500,
+        drawMs: 1800,
+        mirrors: [
+          { x: 1, y: 2, orientation: "/" },
+          { x: 1, y: 0, orientation: "/" },
+          { x: 2, y: 0, orientation: "\\" },
+        ],
+        easing: "linear",
+      },
+    ],
+    taps: [{ atMs: 1300, cell: { x: 1, y: 2 } }],
   },
   {
-    id: "wrong-number",
-    caption: "Numbers in the incorrect order are not collected.",
+    id: "advanced",
+    title: "LASER RULES",
+    caption:
+      "Laser paths can cross, revisit squares, and pass through the source.",
+    cellSize: 32,
     puzzle: {
       id: 9003,
-      code: "3",
-      ...TUTORIAL_PUZZLE_BASE,
+      code: "",
+      gridSize: 4,
+      obstacles: [],
       source: { x: 0, y: 1, direction: "right" },
-      flag: { x: 0, y: 0 },
-      numbers: [{ x: 1, y: 1, value: 5 }],
-    },
-    mirrors: [],
-    effectThreshold: 0.85,
-    showVictoryLaser: false,
-  },
-  {
-    id: "flag",
-    caption: "Reach the flag after the full code.",
-    puzzle: {
-      id: 9004,
-      code: "1",
-      ...TUTORIAL_PUZZLE_BASE,
-      source: { x: 0, y: 1, direction: "up" },
       flag: { x: 0, y: 0 },
       numbers: [],
     },
-    mirrors: [],
-    effectThreshold: 0.9,
-    showVictoryLaser: true,
+    phases: [
+      {
+        startMs: 0,
+        drawMs: 3000,
+        mirrors: [
+          { x: 3, y: 1, orientation: "/" },
+          { x: 3, y: 0, orientation: "\\" },
+          { x: 2, y: 0, orientation: "/" },
+          { x: 2, y: 2, orientation: "/" },
+          { x: 0, y: 2, orientation: "\\" },
+        ],
+        easing: "linear",
+        victory: true,
+      },
+    ],
+  },
+  {
+    id: "finish",
+    title: "REACH THE FLAG",
+    caption: "Reach the flag only after collecting every number.",
+    cellSize: 36,
+    puzzle: {
+      id: 9004,
+      code: "7",
+      gridSize: 3,
+      obstacles: [],
+      source: { x: 0, y: 2, direction: "up" },
+      flag: { x: 0, y: 0 },
+      numbers: [{ x: 1, y: 1, value: 7 }],
+    },
+    phases: [
+      {
+        startMs: 0,
+        drawMs: 600,
+        mirrors: [
+          { x: 2, y: 1, orientation: "/" },
+          { x: 2, y: 0, orientation: "\\" },
+        ],
+        flagIncorrectOnHold: true,
+      },
+      {
+        startMs: 1500,
+        drawMs: 1600,
+        mirrors: [
+          { x: 2, y: 1, orientation: "/" },
+          { x: 2, y: 0, orientation: "\\" },
+          { x: 0, y: 1, orientation: "/" },
+        ],
+        victory: true,
+      },
+    ],
+    taps: [{ atMs: 1300, cell: { x: 0, y: 1 } }],
   },
 ];
-
-export const TUTORIAL_CELL_SIZE = 44;
-
-/**
- * Every demo runs the same total loop so they reset in sync. Regular demos:
- * draw (1.2s), hold, reset. placeMirrorMidLoop demos fit a prelude into the
- * same window: quick straight draw (0.4s) + hold (0.2s), mirrors placed at
- * 0.6s, then the redirected beam draws (1.2s), hold, reset.
- */
-export const TUTORIAL_DRAW_MS = 1200;
-export const TUTORIAL_STRAIGHT_DRAW_MS = 400;
-export const TUTORIAL_STRAIGHT_HOLD_MS = 200;
-export const TUTORIAL_HOLD_MS = 800;
-export const TUTORIAL_RESET_MS = 400;

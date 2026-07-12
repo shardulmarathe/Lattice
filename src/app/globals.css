@@ -180,3 +180,18 @@ body {
 .animate-number-error-glow {
   animation: number-error-glow 2s ease-in-out infinite;
 }
+
+@keyframes tap-ripple {
+  0% {
+    transform: scale(0.25);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-tap-ripple {
+  animation: tap-ripple 450ms ease-out forwards;
+}

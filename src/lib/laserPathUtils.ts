@@ -1,5 +1,4 @@
 import type {
-  BoardCell,
   LaserSegment,
   MirrorOrientation,
   Position,
@@ -192,6 +191,31 @@ export function segmentToPixels(
     from: toPixel(segment.from.x, segment.from.y, cellSize),
     to: toPixel(segment.to.x, segment.to.y, cellSize),
   };
+}
+
+/**
+ * Fraction of total path length (0–1) at which the beam tip arrives at each
+ * visited cell, in visit order. segments[i] carries the beam from
+ * visitedCells[i] toward visitedCells[i + 1] (the final segment is a
+ * half-length stub when the beam exits the board or hits an obstacle), so a
+ * flag-terminated path gives the flag an arrival of exactly 1.
+ */
+export function computeVisitArrivalFractions(
+  segments: LaserSegment[],
+  visitedCells: Position[]
+): number[] {
+  const lengths = segments.map(
+    (s) => Math.abs(s.to.x - s.from.x) + Math.abs(s.to.y - s.from.y)
+  );
+  const totalLength = lengths.reduce((sum, len) => sum + len, 0);
+
+  const fractions: number[] = [];
+  let walked = 0;
+  for (let i = 0; i < visitedCells.length; i++) {
+    fractions.push(totalLength === 0 ? 0 : Math.min(1, walked / totalLength));
+    walked += lengths[i] ?? 0;
+  }
+  return fractions;
 }
 
 /** Orbit radius for the victory ring around the flag icon. */
