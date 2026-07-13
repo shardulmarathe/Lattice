@@ -81,53 +81,44 @@ export default function HowToPlayModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="max-h-[90vh] w-full max-w-md overflow-y-auto border border-white/10 bg-black p-4 shadow-2xl md:max-w-lg md:p-6"
+            className="flex max-h-[90dvh] w-full max-w-md flex-col border border-white/10 bg-black p-4 shadow-2xl md:max-w-lg md:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="mb-2 text-xl tracking-[0.3em] text-white">
-              HOW TO PLAY
-            </h2>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <h2 className="mb-1.5 text-lg tracking-[0.3em] text-white">
+                HOW TO PLAY
+              </h2>
 
-            <p className="mb-4 text-sm leading-relaxed text-white/80">
-              Guide the laser through every number in the target code, then
-              reach the flag.
-            </p>
-
-            <div className="space-y-3">
-              <DemoRow
-                title={MIRROR_CYCLE_SECTION.title}
-                caption={MIRROR_CYCLE_SECTION.caption}
-              >
-                <MirrorCycleDemo />
-              </DemoRow>
-
-              {TUTORIAL_SCENARIOS.map((scenario) => (
-                <DemoRow
-                  key={scenario.id}
-                  title={scenario.title}
-                  caption={scenario.caption}
-                >
-                  <TutorialDemo scenario={scenario} />
-                </DemoRow>
-              ))}
-            </div>
-
-            <div className="mt-4 border border-white/10 bg-white/[0.03] p-3">
-              <p className="mb-1.5 text-[10px] uppercase tracking-[0.3em] text-white/50">
-                Remember
+              <p className="mb-3 text-sm leading-relaxed text-white/80">
+                Guide the laser through every number in the target code, in
+                order, then reach the flag.
               </p>
-              <ul className="space-y-1 text-xs leading-snug text-white/70">
-                <li>• Laser paths can overlap.</li>
-                <li>• The source does not block lasers.</li>
-                <li>• Reach the flag after collecting every number.</li>
-              </ul>
+
+              <div className="space-y-2">
+                <DemoRow
+                  title={MIRROR_CYCLE_SECTION.title}
+                  caption={MIRROR_CYCLE_SECTION.caption}
+                >
+                  <MirrorCycleDemo />
+                </DemoRow>
+
+                {TUTORIAL_SCENARIOS.map((scenario) => (
+                  <DemoRow
+                    key={scenario.id}
+                    title={scenario.title}
+                    caption={scenario.caption}
+                  >
+                    <TutorialDemo scenario={scenario} />
+                  </DemoRow>
+                ))}
+              </div>
             </div>
 
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleConfirm}
-              className="mt-4 w-full border border-white/20 py-2.5 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+              className="mt-3 w-full shrink-0 border border-white/20 py-2.5 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
             >
               {confirmLabel}
             </motion.button>

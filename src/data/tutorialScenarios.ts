@@ -51,7 +51,7 @@ export const MIRROR_CYCLE_SECTION = {
   title: "PLACE MIRRORS",
   caption:
     "Tap an empty square to place a mirror. Tap again to rotate it. Tap a third time to remove it.",
-  cellSize: 44,
+  cellSize: 40,
   gridSize: 2,
   cell: { x: 1, y: 0 } as Position,
   tapsAtMs: [600, 1800, 3000],
@@ -64,7 +64,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
     id: "redirect",
     title: "REDIRECT THE LASER",
     caption: "Mirrors redirect the laser toward the target code.",
-    cellSize: 44,
+    cellSize: 40,
     puzzle: {
       id: 9001,
       code: "",
@@ -89,7 +89,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
     title: "COLLECT THE CODE",
     caption:
       "Collect every number in the target code, in order. Hitting one out of order breaks the code — reroute to avoid it.",
-    cellSize: 36,
+    cellSize: 32,
     puzzle: {
       id: 9002,
       code: "35",
@@ -128,7 +128,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
     puzzle: {
       id: 9003,
       code: "",
-      gridSize: 4,
+      gridSize: 3,
       obstacles: [],
       source: { x: 0, y: 1, direction: "right" },
       flag: { x: 0, y: 0 },
@@ -138,11 +138,14 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
       {
         startMs: 0,
         drawMs: 3000,
+        // Beam runs right along y=1, up the right edge, back left along the
+        // top, then down column x=1 — crossing its own y=1 path at (1,1) —
+        // and finally up column x=0 through the source to the flag.
         mirrors: [
-          { x: 3, y: 1, orientation: "/" },
-          { x: 3, y: 0, orientation: "\\" },
-          { x: 2, y: 0, orientation: "/" },
-          { x: 2, y: 2, orientation: "/" },
+          { x: 2, y: 1, orientation: "/" },
+          { x: 2, y: 0, orientation: "\\" },
+          { x: 1, y: 0, orientation: "/" },
+          { x: 1, y: 2, orientation: "/" },
           { x: 0, y: 2, orientation: "\\" },
         ],
         easing: "linear",
@@ -154,7 +157,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
     id: "finish",
     title: "REACH THE FLAG",
     caption: "Reach the flag only after collecting every number.",
-    cellSize: 36,
+    cellSize: 32,
     puzzle: {
       id: 9004,
       code: "7",

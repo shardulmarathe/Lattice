@@ -456,30 +456,47 @@ export default function GameScreen() {
   const showPauseOverlay =
     isPaused && !isComplete && !gameplayLocked;
 
-  const boardSlotRef = useRef<HTMLDivElement>(null);
-  const [boardSlotSize, setBoardSlotSize] = useState<{
+  const boardRegionRef = useRef<HTMLDivElement>(null);
+  const clusterHeaderRef = useRef<HTMLDivElement>(null);
+  const [boardRegionSize, setBoardRegionSize] = useState<{
     width?: number;
     height?: number;
+    headerHeight?: number;
   }>({});
 
   useEffect(() => {
-    const slot = boardSlotRef.current;
-    if (!slot) return;
+    const region = boardRegionRef.current;
+    if (!region) return;
 
     const updateSize = () => {
-      setBoardSlotSize({
-        width: slot.clientWidth,
-        height: slot.clientHeight,
+      setBoardRegionSize({
+        width: region.clientWidth,
+        height: region.clientHeight,
+        headerHeight: clusterHeaderRef.current?.clientHeight ?? 0,
       });
     };
 
     updateSize();
 
     const observer = new ResizeObserver(updateSize);
-    observer.observe(slot);
+    observer.observe(region);
+    if (clusterHeaderRef.current) observer.observe(clusterHeaderRef.current);
 
     return () => observer.disconnect();
   }, []);
+
+  // Slack between the header block and the board (region gap + rounding). The
+  // board's height budget is the region minus the header so it never overflows.
+  const BOARD_REGION_GAP_PX = 24;
+  const boardMaxHeight =
+    boardRegionSize.height !== undefined
+      ? Math.max(
+          0,
+          boardRegionSize.height -
+            (boardRegionSize.headerHeight ?? 0) -
+            BOARD_REGION_GAP_PX
+        )
+      : undefined;
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-black">
@@ -498,27 +515,32 @@ export default function GameScreen() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 md:pt-4">
-        <div className="flex min-h-0 flex-1 flex-col items-center gap-3 md:gap-5">
+        <div
+          ref={boardRegionRef}
+          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 md:gap-5"
+        >
           <div
-            className={`shrink-0 transition-opacity duration-500 ${contentDimClass}`}
+            ref={clusterHeaderRef}
+            className="flex shrink-0 flex-col items-center gap-3 md:gap-5"
           >
-            <h1 className="text-center text-2xl font-light tracking-[0.4em] text-white md:text-4xl">
+            <h1
+              className={`text-center text-2xl font-light tracking-[0.4em] text-white transition-opacity duration-500 md:text-4xl ${contentDimClass}`}
+            >
               LATTICE
             </h1>
+
+            <TargetCodeIntro
+              code={puzzle.code}
+              isComplete={isComplete}
+              collectedDigitCount={correctPrefixLength}
+              playIntro={shouldPlayCodeIntro}
+              introPaused={showHowToPlay}
+              onIntroComplete={handleCodeIntroComplete}
+            />
           </div>
 
-          <TargetCodeIntro
-            code={puzzle.code}
-            isComplete={isComplete}
-            collectedDigitCount={correctPrefixLength}
-            playIntro={shouldPlayCodeIntro}
-            introPaused={showHowToPlay}
-            onIntroComplete={handleCodeIntroComplete}
-          />
-
           <div
-            ref={boardSlotRef}
-            className={`flex min-h-0 w-full flex-1 items-start justify-center transition-opacity duration-500 ${contentDimClass}`}
+            className={`flex min-h-0 w-full items-center justify-center transition-opacity duration-500 ${contentDimClass}`}
           >
             <Board
               puzzle={puzzle}
@@ -530,8 +552,8 @@ export default function GameScreen() {
               onCellClick={handleCellClick}
               disabled={interactionsDisabled}
               showVictoryLaser={showVictoryLaser}
-              maxBoardWidth={boardSlotSize.width}
-              maxBoardHeight={boardSlotSize.height}
+              maxBoardWidth={boardRegionSize.width}
+              maxBoardHeight={boardMaxHeight}
               hintFlash={hintFlash}
             />
           </div>
