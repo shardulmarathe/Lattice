@@ -263,10 +263,12 @@ export default function GameScreen() {
   );
 
   // Passive mistake tracking: wrong number tiles + premature flag hits.
-  // Never decrements when mirrors change — only reset on clear-board / a fresh
-  // (replay) session. Seeded on first run so a mid-solve reload doesn't recount
-  // mistakes already persisted.
-  const countedWrongKeysRef = useRef<Set<string>>(new Set());
+  // Counts every time a wrong number newly appears on the path (including the
+  // same tile again after you fix and re-hit it) and every time the path newly
+  // reaches the flag early. Never decrements — only reset on clear-board / a
+  // fresh (replay) session. Seeded on first run so a mid-solve reload doesn't
+  // recount mistakes already persisted.
+  const prevIncorrectKeysRef = useRef<Set<string>>(new Set());
   const wasEarlyFlagRef = useRef(false);
   const wrongInitRef = useRef(false);
 
@@ -278,18 +280,20 @@ export default function GameScreen() {
   useEffect(() => {
     if (!wrongInitRef.current) {
       wrongInitRef.current = true;
-      countedWrongKeysRef.current = new Set(incorrectKeys);
+      prevIncorrectKeysRef.current = new Set(incorrectKeys);
       wasEarlyFlagRef.current = isEarlyFlagMistake;
       return;
     }
 
     let newlyWrong = 0;
-    for (const cellKey of incorrectKeys) {
-      if (!countedWrongKeysRef.current.has(cellKey)) {
-        countedWrongKeysRef.current.add(cellKey);
+    for (const key of incorrectKeys) {
+      // Count each transition into "this cell is wrong on the path" — leaving
+      // and re-entering (same cell hit again) counts as another mistake.
+      if (!prevIncorrectKeysRef.current.has(key)) {
         newlyWrong += 1;
       }
     }
+    prevIncorrectKeysRef.current = new Set(incorrectKeys);
 
     // Count each time the path newly reaches the flag before the code is done.
     if (isEarlyFlagMistake && !wasEarlyFlagRef.current) {
@@ -336,7 +340,7 @@ export default function GameScreen() {
     // Clearing the board resets the session mistake and hint counters.
     setWrongNumberHits(0);
     setHintsUsed(0);
-    countedWrongKeysRef.current = new Set();
+    prevIncorrectKeysRef.current = new Set();
     wasEarlyFlagRef.current = false;
   }, [isComplete]);
 
@@ -370,7 +374,7 @@ export default function GameScreen() {
       buildBoard(puzzle, next),
       nextLaser.visitedCells
     );
-    for (const key of nextIncorrect) countedWrongKeysRef.current.add(key);
+    prevIncorrectKeysRef.current = new Set(nextIncorrect);
     const nextValidation = validateSequence(puzzle.code, nextLaser);
     wasEarlyFlagRef.current =
       nextLaser.reachedFlag &&

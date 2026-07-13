@@ -248,7 +248,11 @@ export default function CompleteScreen() {
           <StatTile
             label="MISTAKES"
             value={wrongNumberHits}
-            detail={wrongNumberHits === 0 ? "clean run" : null}
+            detail={
+              wrongNumberHits === 0
+                ? "clean run"
+                : "Wrong Number & Early Flag Slip-Ups"
+            }
             accentValue={wrongNumberHits > 0}
             big
           />
