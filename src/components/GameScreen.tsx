@@ -109,6 +109,9 @@ export default function GameScreen() {
     x: number;
     y: number;
   } | null>(null);
+  // Tap-on-number feedback only — does not affect the mistakes counter.
+  const [placementWarning, setPlacementWarning] = useState<string | null>(null);
+  const placementWarningTimerRef = useRef<number | null>(null);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
   const isViewingSolve = saved.isViewingSolve;
   const [savedComplete, setSavedComplete] = useState(saved.isComplete);
@@ -310,10 +313,32 @@ export default function GameScreen() {
     (x: number, y: number) => {
       if (isPaused || isComplete) return;
 
+      const cell = board[y]?.[x];
+      if (cell?.type === "number" || cell?.type === "flag") {
+        if (placementWarningTimerRef.current !== null) {
+          window.clearTimeout(placementWarningTimerRef.current);
+        }
+        setPlacementWarning(
+          cell.type === "number"
+            ? "You cannot place a mirror on a number."
+            : "You cannot place a mirror on the flag."
+        );
+        placementWarningTimerRef.current = window.setTimeout(() => {
+          setPlacementWarning(null);
+          placementWarningTimerRef.current = null;
+        }, 2500);
+        return;
+      }
+
       const existing = getMirrorAt(mirrors, x, y);
 
       if (existing === null) {
         if (!canPlaceMirror(puzzle, mirrors, x, y)) return;
+        setPlacementWarning(null);
+        if (placementWarningTimerRef.current !== null) {
+          window.clearTimeout(placementWarningTimerRef.current);
+          placementWarningTimerRef.current = null;
+        }
         setMirrors((prev) => [...prev, { x, y, orientation: "/" }]);
         return;
       }
@@ -331,8 +356,16 @@ export default function GameScreen() {
         );
       }
     },
-    [isPaused, isComplete, puzzle, mirrors]
+    [isPaused, isComplete, puzzle, mirrors, board]
   );
+
+  useEffect(() => {
+    return () => {
+      if (placementWarningTimerRef.current !== null) {
+        window.clearTimeout(placementWarningTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleClearBoard = useCallback(() => {
     if (isComplete) return;
@@ -573,7 +606,10 @@ export default function GameScreen() {
           </p>
 
           {!isViewingSolve && (
-            <WarningBanner message={validation.warningMessage} inline />
+            <WarningBanner
+              message={placementWarning ?? validation.warningMessage}
+              inline
+            />
           )}
         </div>
       </div>

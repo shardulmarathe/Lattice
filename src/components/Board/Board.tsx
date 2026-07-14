@@ -115,7 +115,14 @@ export default function Board({
 
   const handleCellClick = (cell: BoardCell, x: number, y: number) => {
     if (disabled) return;
-    if (cell.type === "empty" || cell.type === "mirror") {
+    // Empty/mirrors: place/cycle. Number/flag: forward so GameScreen can warn
+    // (illegal placement — display only, not a mistake).
+    if (
+      cell.type === "empty" ||
+      cell.type === "mirror" ||
+      cell.type === "number" ||
+      cell.type === "flag"
+    ) {
       onCellClick(x, y);
     }
   };
@@ -146,7 +153,11 @@ export default function Board({
         {board.map((row, y) =>
           row.map((cell, x) => {
             const isInteractive =
-              !disabled && (cell.type === "empty" || cell.type === "mirror");
+              !disabled &&
+              (cell.type === "empty" ||
+                cell.type === "mirror" ||
+                cell.type === "number" ||
+                cell.type === "flag");
             const mirrorOffset =
               cell.type === "mirror" && cell.mirror
                 ? getMirrorOffset(x, y, cell.mirror)
