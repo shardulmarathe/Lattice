@@ -1,0 +1,141 @@
+{
+  "id": 31,
+  "scheduledDate": "2026-07-22",
+  "code": "5259355",
+  "gridSize": 8,
+  "seed": "2026-07-22:8:25",
+  "solutionMirrors": [
+    {
+      "x": 4,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 7,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 7,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 6,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 7,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "orientation": "/"
+    }
+  ],
+  "mirrorCount": 25,
+  "mirrorDensity": 0.391,
+  "solverCap": 3,
+  "minMirrors": 11,
+  "pathLength": 57,
+  "obstacleInterference": 12,
+  "score": 33.96
+}
