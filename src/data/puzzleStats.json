@@ -88,5 +88,8 @@
   },
   "31": {
     "minMirrors": 11
+  },
+  "32": {
+    "minMirrors": 6
   }
 }
