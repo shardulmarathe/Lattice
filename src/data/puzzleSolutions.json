@@ -1605,5 +1605,47 @@
       "y": 3,
       "orientation": "/"
     }
+  ],
+  "33": [
+    {
+      "x": 1,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "orientation": "/"
+    }
   ]
 }
