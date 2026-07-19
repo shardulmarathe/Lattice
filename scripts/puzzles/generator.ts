@@ -23,7 +23,15 @@ import type {
 import { calculateLaserPath } from "../../src/lib/laserEngine";
 import { validateSequence } from "../../src/lib/validation";
 import { grade, type GradeResult } from "./grader";
-import { GRID_MIN, GRID_MAX, rollParams, type GenParams } from "./config";
+import { solveExactMin, type ExactMinResult } from "./exactMin";
+import {
+  GRID_MIN,
+  GRID_MAX,
+  MIN_EXACT_MIRRORS,
+  EXACT_MIN_GEN_OPTIONS,
+  rollParams,
+  type GenParams,
+} from "./config";
 import { makeRng, type Rng } from "./rng";
 
 export interface GeneratedPuzzle {
@@ -32,6 +40,10 @@ export interface GeneratedPuzzle {
   solution: MirrorPlacement[];
   params: GenParams;
   grade: GradeResult;
+  /** Proven exact min (or lower bound) from the difficulty gate — reused by the
+   * codegen step so the shipped daily records its minimum + HINT witness without
+   * solving twice. */
+  exact: ExactMinResult;
   seed: string;
   attempts: number;
 }
@@ -310,6 +322,7 @@ function attempt(
   solution: MirrorPlacement[];
   params: GenParams;
   grade: GradeResult;
+  exact: ExactMinResult;
 } | null {
   const params = rollParams(rng, gridSize);
   const { codeLength, minMirrorCount } = params;
@@ -320,7 +333,11 @@ function attempt(
   // the solution never touches, so they block shortcut solutions without altering
   // the intended path.
   const walk = buildWalk(rng, params, source, new Set());
-  if (walk.mirrors.size < minMirrorCount) return null; // not dense enough → too easy
+  // The true minimum can only be ≤ the constructed length, so a construction below
+  // the difficulty floor can never pass the exact-min gate — reject it here before
+  // paying for flag/number selection or the solver. (This is also what makes small
+  // grids self-reject: they can't build MIN_EXACT_MIRRORS mirrors.)
+  if (walk.mirrors.size < Math.max(minMirrorCount, MIN_EXACT_MIRRORS)) return null;
 
   const solution: MirrorPlacement[] = [...walk.mirrors.entries()].map(([k, orientation]) => {
     const [x, y] = k.split(",").map(Number);
@@ -401,16 +418,28 @@ function attempt(
     if (complexity < required) return null;
   }
 
-  // (3) Anti-triviality: reject if a solution CHEAPER than the intended dense one
-  // exists (searched up to intended-1, bounded by what's affordable). No cheap
-  // shortcut + dense intended solution → extra hard.
+  // (3) Anti-triviality (cheap pre-filter): reject if a solution CHEAPER than the
+  // intended dense one exists within the naive solver's affordable cap. On large
+  // grids this cap is tiny (~3), so it only catches the most trivial shortcuts —
+  // the real difficulty gate is (4) below.
   const g = grade(full, {
     fallbackSolution: solution,
     maxMirrors: solution.length - 1,
   });
   if (g.solvableWithinCap) return null; // a cheaper shortcut exists → too easy
 
-  return { puzzle, solution, params, grade: g };
+  // (4) Difficulty gate: the PROVEN exact minimum must meet the floor. This is the
+  // only reliable difficulty signal (constructed density is decorative — see
+  // MIN_EXACT_MIRRORS). A board with a cheap true solution is proven and rejected
+  // quickly; only genuinely hard boards pay the full solve. When the solver
+  // node-caps without a witness we accept only if it already PROVED a ≥-floor lower
+  // bound, and reject the ambiguous middle (conservative — the nightly solver would
+  // refine it, but we won't ship a daily we can't vouch for as hard).
+  const exact = solveExactMin(full, EXACT_MIN_GEN_OPTIONS);
+  const provenMin = exact.minMirrors ?? exact.minMirrorsAtLeast ?? 0;
+  if (provenMin < MIN_EXACT_MIRRORS) return null; // too easy, or not provably hard enough
+
+  return { puzzle, solution, params, grade: g, exact };
 }
 
 /** All grid sizes, deterministically ordered per date so the preferred size is

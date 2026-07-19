@@ -24,6 +24,28 @@ export const SOLVER_BUDGET = 1_000_000;
 export const SOLVER_CAP_MIN = 3;
 export const SOLVER_CAP_MAX = 8;
 
+/**
+ * Difficulty floor: reject any generated daily whose PROVEN exact minimum mirror
+ * count is below this. This is the real difficulty signal — constructed mirror
+ * density is decorative, because the player only has to route to the numbers +
+ * flag in order, and a dense construction almost always hides a far cheaper true
+ * solution (the naive anti-triviality grader can only rule out shortcuts up to a
+ * ~3-mirror cap on large grids). Gating on the exact min (via the fast beam-guided
+ * solver) is the only reliable knob. Small grids physically can't require this
+ * many mirrors, so generation self-selects large, genuinely-hard boards. Matches
+ * the harder curated puzzles (#16 = 12, #22 = 12).
+ */
+export const MIN_EXACT_MIRRORS = 12;
+
+/**
+ * Exact-min search budget used BOTH as the generation-time difficulty gate and to
+ * record the shipped minimum + HINT witness. maxBudget 24 covers the real 17-18
+ * minimums that exist (#8, #17); nodeCap ~500M is ~20s worst case on the rewritten
+ * solver (~30M nodes/sec). A candidate with a cheap true solution is proven (and
+ * rejected) fast; only genuinely hard boards pay the full cost.
+ */
+export const EXACT_MIN_GEN_OPTIONS = { maxBudget: 24, nodeCap: 500_000_000 } as const;
+
 export interface GenParams {
   gridSize: number;
   codeLength: number;

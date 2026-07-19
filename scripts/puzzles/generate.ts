@@ -18,7 +18,6 @@ import { join } from "node:path";
 import { PUZZLES } from "@/data/puzzles";
 import { PUZZLE_SCHEDULE } from "@/data/schedule";
 import { generatePuzzle, puzzleHash } from "./generator";
-import { solveExactMin } from "./exactMin";
 import {
   SOLUTIONS_FILE,
   mergeSolution,
@@ -34,14 +33,6 @@ import {
   writeScheduleModule,
   writeSolutionSidecar,
 } from "./codegen";
-
-// Exact-min budget at generation time. Kept modest so the daily cron stays
-// quick — dense "extra hard" dailies cap out to a lower bound here anyway; the
-// offline `puzzles:stats --exact` backfill can spend more to nail moderate ones.
-// Calibrated to the rewritten solver (~30M nodes/sec): worst case ~20s per
-// puzzle, enough to prove an exact min for almost every generated puzzle at
-// creation time. Real minimums of 17-18 exist (#8, #17), hence maxBudget 24.
-const EXACT_MIN_GEN_OPTIONS = { maxBudget: 24, nodeCap: 500_000_000 } as const;
 
 interface Args {
   today: string;
@@ -125,11 +116,10 @@ function main(): void {
     );
 
     if (!args.dryRun) {
-      // Exact min-mirror search (beam-guided), separate from the anti-triviality
-      // check which only searched up to solution.length - 1. Records an exact
-      // minimum when the bounded search proves one, else a lower bound. Dense
-      // "extra hard" dailies typically cap out (bound only); moderate ones solve.
-      const exact = solveExactMin(puzzle, EXACT_MIN_GEN_OPTIONS);
+      // The difficulty gate already proved this puzzle's exact minimum (or a
+      // ≥-floor lower bound) during generation — reuse it rather than solving
+      // again. Records an exact minimum when proven, else a lower bound.
+      const exact = generated.exact;
       console.log(
         `    exact min: ${
           exact.minMirrors !== undefined
