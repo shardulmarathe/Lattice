@@ -1,7 +1,17 @@
-import type { MirrorPlacement } from "./puzzleTypes";
+import type { MirrorPlacement, Puzzle } from "./puzzleTypes";
+import { calculateLaserPath } from "./laserEngine";
+import { validateSequence } from "./validation";
 
 export interface SavedGameState {
   puzzleId: number;
+  /**
+   * Signature of the puzzle content this save belongs to. Guards against a save
+   * from an OLD puzzle loading for a NEW puzzle that reused the same id (dailies
+   * are regenerated in place) — a stale completion would otherwise lock the
+   * player out of the new puzzle. Optional so pre-signature saves still load
+   * (validated by content coherence instead — see loadGameState).
+   */
+  signature?: string;
   mirrors: MirrorPlacement[];
   elapsedSeconds: number;
   completionSeconds: number | null;
@@ -32,21 +42,84 @@ function storageKey(puzzleId: number, mode: GameMode): string {
   return `${prefix}${puzzleId}`;
 }
 
+/**
+ * Deterministic signature of a puzzle's content (independent of its id). Two
+ * puzzles with the same board/code/numbers/obstacles hash equal; any change makes
+ * a save from the old content mismatch. Mirrors the fields of the generator's
+ * `puzzleHash` (scripts/puzzles/generator.ts) so "same content" means the same
+ * thing on both sides.
+ */
+export function puzzleSignature(puzzle: Puzzle): string {
+  const nums = [...puzzle.numbers]
+    .map((n) => `${n.value}@${n.x},${n.y}`)
+    .sort()
+    .join("|");
+  const obs = [...puzzle.obstacles]
+    .map((o) => `${o.x},${o.y}`)
+    .sort()
+    .join("|");
+  return [
+    `g${puzzle.gridSize}`,
+    `c${puzzle.code}`,
+    `s${puzzle.source.x},${puzzle.source.y},${puzzle.source.direction}`,
+    `f${puzzle.flag.x},${puzzle.flag.y}`,
+    `n${nums}`,
+    `o${obs}`,
+  ].join(";");
+}
+
+/**
+ * Whether a legacy (pre-signature) save is still coherent with `puzzle`. Used to
+ * decide if a save with no signature belongs to the current puzzle: its mirrors
+ * must sit on legal cells, and a completed save's mirrors must actually solve the
+ * puzzle. A save from a different puzzle that reused this id fails these checks.
+ */
+function isLegacySaveCoherent(
+  parsed: SavedGameState,
+  puzzle: Puzzle
+): boolean {
+  const { gridSize } = puzzle;
+  const blocked = new Set<string>([
+    `${puzzle.source.x},${puzzle.source.y}`,
+    `${puzzle.flag.x},${puzzle.flag.y}`,
+    ...puzzle.obstacles.map((o) => `${o.x},${o.y}`),
+  ]);
+  for (const m of parsed.mirrors) {
+    if (m.x < 0 || m.x >= gridSize || m.y < 0 || m.y >= gridSize) return false;
+    if (blocked.has(`${m.x},${m.y}`)) return false;
+  }
+  if (parsed.isComplete) {
+    const result = calculateLaserPath(puzzle, parsed.mirrors);
+    if (!validateSequence(puzzle.code, result).isComplete) return false;
+  }
+  return true;
+}
+
 export function loadGameState(
-  puzzleId: number,
+  puzzle: Puzzle,
   mode: GameMode = "record"
 ): SavedGameState | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = localStorage.getItem(storageKey(puzzleId, mode));
+    const raw = localStorage.getItem(storageKey(puzzle.id, mode));
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as SavedGameState;
-    if (parsed.puzzleId !== puzzleId) return null;
+    if (parsed.puzzleId !== puzzle.id) return null;
+
+    const signature = puzzleSignature(puzzle);
+    // Reject a save that belongs to different puzzle content under the same id.
+    if (typeof parsed.signature === "string") {
+      if (parsed.signature !== signature) return null;
+    } else if (!isLegacySaveCoherent(parsed, puzzle)) {
+      return null;
+    }
 
     return {
-      puzzleId,
+      puzzleId: puzzle.id,
+      // Adopt the current signature so the next save uses the fast path.
+      signature,
       mirrors: Array.isArray(parsed.mirrors) ? parsed.mirrors : [],
       elapsedSeconds:
         typeof parsed.elapsedSeconds === "number" ? parsed.elapsedSeconds : 0,
@@ -93,9 +166,10 @@ export function clearPracticeState(puzzleId: number): void {
   }
 }
 
-export function createDefaultGameState(puzzleId: number): SavedGameState {
+export function createDefaultGameState(puzzle: Puzzle): SavedGameState {
   return {
-    puzzleId,
+    puzzleId: puzzle.id,
+    signature: puzzleSignature(puzzle),
     mirrors: [],
     elapsedSeconds: 0,
     completionSeconds: null,
@@ -107,8 +181,8 @@ export function createDefaultGameState(puzzleId: number): SavedGameState {
   };
 }
 
-export function isPuzzleComplete(puzzleId: number): boolean {
-  const saved = loadGameState(puzzleId);
+export function isPuzzleComplete(puzzle: Puzzle): boolean {
+  const saved = loadGameState(puzzle);
   return Boolean(saved?.isComplete && saved.completionSeconds !== null);
 }
 
@@ -121,8 +195,8 @@ export interface PuzzleProgress {
 }
 
 /** Summary of a puzzle's canonical (record) state, for the archive list. */
-export function getPuzzleProgress(puzzleId: number): PuzzleProgress {
-  const saved = loadGameState(puzzleId);
+export function getPuzzleProgress(puzzle: Puzzle): PuzzleProgress {
+  const saved = loadGameState(puzzle);
 
   if (!saved) {
     return { status: "unsolved", completionSeconds: null, mirrorsUsed: 0 };

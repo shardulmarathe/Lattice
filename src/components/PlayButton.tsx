@@ -28,7 +28,7 @@ function preloadCompleteScreen() {
 
 function getPlayRoute(): "/play" | "/complete" {
   const puzzle = getPuzzleForDate(new Date()) ?? PUZZLE_001;
-  return isPuzzleComplete(puzzle.id) ? "/complete" : "/play";
+  return isPuzzleComplete(puzzle) ? "/complete" : "/play";
 }
 
 function easeOutCubic(t: number): number {

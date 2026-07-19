@@ -78,7 +78,7 @@ export default function PastGamesModal({
       next.push({
         puzzle,
         dateKey: entry.dateKey,
-        progress: getPuzzleProgress(entry.id),
+        progress: getPuzzleProgress(puzzle),
       });
     }
 

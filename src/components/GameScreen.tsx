@@ -15,6 +15,7 @@ import {
   createDefaultGameState,
   isPuzzleComplete,
   loadGameState,
+  puzzleSignature,
   saveGameState,
   type GameMode,
   type SavedGameState,
@@ -35,17 +36,17 @@ import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 const COMPLETION_NAV_DELAY_MS = 350;
 
 function readSavedState(
-  puzzleId: number,
+  puzzle: Puzzle,
   mode: GameMode,
   wantsReplay: boolean
 ): SavedGameState {
   // Practice replays and record-mode replays (dev vetting / replaying an
   // unsolved puzzle) both start from a clean board.
   if (mode === "practice" || wantsReplay) {
-    return createDefaultGameState(puzzleId);
+    return createDefaultGameState(puzzle);
   }
 
-  return loadGameState(puzzleId) ?? createDefaultGameState(puzzleId);
+  return loadGameState(puzzle) ?? createDefaultGameState(puzzle);
 }
 
 function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
@@ -79,12 +80,15 @@ export default function GameScreen() {
   // Replaying a puzzle that already has a canonical solve runs as a practice
   // session — it never overwrites the recorded time.
   const [mode] = useState<GameMode>(() =>
-    wantsReplay && isPuzzleComplete(puzzle.id) ? "practice" : "record"
+    wantsReplay && isPuzzleComplete(puzzle) ? "practice" : "record"
   );
   const isPractice = mode === "practice";
   const [saved] = useState(() =>
-    readSavedState(puzzle.id, mode, wantsReplay)
+    readSavedState(puzzle, mode, wantsReplay)
   );
+  // Content signature stamped on every save so a regenerated puzzle that reused
+  // this id can't load a stale completion (see gameStorage.loadGameState).
+  const signature = useMemo(() => puzzleSignature(puzzle), [puzzle]);
 
   // Where to send the player on completion — preserve ?puzzle=N for archives,
   // and tag practice runs so the completion screen shows only Replay.
@@ -160,6 +164,7 @@ export default function GameScreen() {
     (overrides: Partial<SavedGameState> = {}) => {
       const state: SavedGameState = {
         puzzleId: puzzle.id,
+        signature,
         mirrors: overrides.mirrors ?? mirrors,
         elapsedSeconds: overrides.elapsedSeconds ?? seconds,
         completionSeconds:
@@ -186,6 +191,7 @@ export default function GameScreen() {
       wrongNumberHits,
       hintsUsed,
       mode,
+      signature,
     ]
   );
 
@@ -214,6 +220,7 @@ export default function GameScreen() {
     saveGameState(
       {
         puzzleId: puzzle.id,
+        signature,
         mirrors,
         elapsedSeconds: seconds,
         completionSeconds: seconds,
@@ -235,6 +242,7 @@ export default function GameScreen() {
     wrongNumberHits,
     hintsUsed,
     mode,
+    signature,
   ]);
 
   useEffect(() => {

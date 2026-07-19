@@ -128,7 +128,7 @@ export default function CompleteScreen() {
   const [hintsUsed, setHintsUsed] = useState(0);
 
   useEffect(() => {
-    const saved = loadGameState(puzzle.id, isPractice ? "practice" : "record");
+    const saved = loadGameState(puzzle, isPractice ? "practice" : "record");
     if (!saved?.isComplete || saved.completionSeconds === null) {
       router.replace(playRoute);
       return;
@@ -139,7 +139,7 @@ export default function CompleteScreen() {
     setWrongNumberHits(saved.wrongNumberHits);
     setHintsUsed(saved.hintsUsed);
     setIsReady(true);
-  }, [puzzle.id, router, playRoute, isPractice]);
+  }, [puzzle, router, playRoute, isPractice]);
 
   // Text the SHARE button copies to the clipboard (revealed only when pasted).
   const shareText = useMemo(
@@ -158,13 +158,13 @@ export default function CompleteScreen() {
   const speedScore = getSpeedScore(puzzle, timeSeconds);
 
   const handleSeeSolve = useCallback(() => {
-    const saved = loadGameState(puzzle.id);
+    const saved = loadGameState(puzzle);
     if (!saved) return;
 
     saveGameState({ ...saved, isViewingSolve: true });
     markTutorialSeen();
     router.push(playRoute);
-  }, [puzzle.id, router, playRoute]);
+  }, [puzzle, router, playRoute]);
 
   const handleReplay = useCallback(() => {
     router.push(replayRoute);
