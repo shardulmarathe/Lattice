@@ -1,14 +1,24 @@
 {
   "id": 34,
   "scheduledDate": "2026-07-25",
-  "code": "3860",
-  "gridSize": 5,
-  "seed": "2026-07-25:5:10",
+  "code": "28537",
+  "gridSize": 6,
+  "seed": "2026-07-25:6:29",
   "solutionMirrors": [
     {
-      "x": 2,
-      "y": 1,
+      "x": 1,
+      "y": 2,
       "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "orientation": "\\"
     },
     {
       "x": 2,
@@ -16,28 +26,18 @@
       "orientation": "/"
     },
     {
-      "x": 3,
-      "y": 0,
-      "orientation": "\\"
-    },
-    {
-      "x": 3,
+      "x": 2,
       "y": 1,
       "orientation": "/"
     },
     {
-      "x": 2,
-      "y": 2,
-      "orientation": "\\"
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
     },
     {
-      "x": 3,
+      "x": 0,
       "y": 2,
-      "orientation": "\\"
-    },
-    {
-      "x": 3,
-      "y": 3,
       "orientation": "/"
     },
     {
@@ -46,12 +46,12 @@
       "orientation": "\\"
     },
     {
-      "x": 0,
-      "y": 2,
-      "orientation": "/"
+      "x": 3,
+      "y": 3,
+      "orientation": "\\"
     },
     {
-      "x": 2,
+      "x": 3,
       "y": 4,
       "orientation": "\\"
     },
@@ -62,15 +62,40 @@
     },
     {
       "x": 4,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
       "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 5,
       "orientation": "\\"
     }
   ],
-  "mirrorCount": 12,
-  "mirrorDensity": 0.48,
-  "solverCap": 6,
-  "minMirrors": 7,
-  "pathLength": 21,
+  "mirrorCount": 17,
+  "mirrorDensity": 0.472,
+  "solverCap": 4,
+  "minMirrors": 12,
+  "pathLength": 32,
   "obstacleInterference": 4,
-  "score": 37.31
+  "score": 32.3
 }

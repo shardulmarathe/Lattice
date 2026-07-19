@@ -87,18 +87,18 @@
     "minMirrors": 12
   },
   "31": {
-    "minMirrors": 11
+    "minMirrors": 12
   },
   "32": {
-    "minMirrors": 6
+    "minMirrors": 12
   },
   "33": {
-    "minMirrors": 8
+    "minMirrors": 13
   },
   "34": {
-    "minMirrors": 7
+    "minMirrors": 12
   },
   "35": {
-    "minMirrors": 8
+    "minMirrors": 12
   }
 }
