@@ -97,5 +97,8 @@
   },
   "34": {
     "minMirrors": 7
+  },
+  "35": {
+    "minMirrors": 8
   }
 }
