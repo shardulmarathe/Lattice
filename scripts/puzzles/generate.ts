@@ -13,7 +13,7 @@
  *   npm run puzzles:generate -- --today=2026-07-20 --dry-run
  */
 
-import { readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PUZZLES } from "@/data/puzzles";
 import { PUZZLE_SCHEDULE } from "@/data/schedule";
@@ -33,6 +33,31 @@ import {
   writeScheduleModule,
   writeSolutionSidecar,
 } from "./codegen";
+
+/**
+ * Runtime min-mirror stats the app reads (efficiency %, speed pacing). Generation
+ * PROVES each puzzle's exact minimum as its difficulty gate, so we record it here
+ * immediately — the daily is fully paced the moment it's created, and the nightly
+ * solver skips it (its progress bootstraps from this) instead of re-proving it.
+ */
+const STATS_FILE = join(REPO_ROOT, "src", "data", "puzzleStats.json");
+interface Stat {
+  minMirrors?: number;
+  minMirrorsAtLeast?: number;
+}
+function readStats(): Record<number, Stat> {
+  if (!existsSync(STATS_FILE)) return {};
+  try {
+    return JSON.parse(readFileSync(STATS_FILE, "utf8")) as Record<number, Stat>;
+  } catch {
+    return {};
+  }
+}
+function writeStats(stats: Record<number, Stat>): void {
+  const ordered: Record<number, Stat> = {};
+  for (const id of Object.keys(stats).map(Number).sort((a, b) => a - b)) ordered[id] = stats[id];
+  writeFileSync(STATS_FILE, JSON.stringify(ordered, null, 2) + "\n");
+}
 
 interface Args {
   today: string;
@@ -84,6 +109,8 @@ function main(): void {
   // Duplicate protection against every already-published puzzle.
   const hashes = new Set(PUZZLES.map((p) => puzzleHash(p)));
 
+  const stats = readStats();
+
   let nextId = maxExistingId() + 1;
   const generatedDraftIds: number[] = [];
   let created = 0;
@@ -112,6 +139,8 @@ function main(): void {
     console.log(
       `✓ ${dateKey} → #${id}  code=${puzzle.code}  ${puzzle.gridSize}×${puzzle.gridSize}  ` +
         `mirrors=${generated.solution.length}/${area} (${density}%)  ` +
+        `craft=${generated.craft.score} (reuse=${generated.craft.reuse} cross=${generated.craft.crossings})  ` +
+        `solutions=${generated.solutions}  ` +
         `min>${generated.grade.cap}  path=${generated.grade.pathLength}  attempts=${generated.attempts}`
     );
 
@@ -127,6 +156,13 @@ function main(): void {
             : `≥${exact.minMirrorsAtLeast}`
         } (${exact.nodes.toLocaleString()} nodes${exact.proven ? "" : ", node-capped"})`
       );
+
+      // Record the min-mirror stat the app reads, so the daily is fully paced
+      // (efficiency %, speed targets) the instant it's generated.
+      stats[id] =
+        exact.minMirrors !== undefined
+          ? { minMirrors: exact.minMirrors }
+          : { minMirrorsAtLeast: exact.minMirrorsAtLeast! };
 
       // Ship the proven-minimal witness so the new daily has HINT support
       // from day one; unproven puzzles are picked up by the nightly solver.
@@ -178,8 +214,9 @@ function main(): void {
   writeScheduleJson(schedule);
   writeScheduleModule(schedule);
   writePuzzlesIndex(registeredDraftIds);
+  writeStats(stats);
   console.log(
-    `\nWrote ${created} puzzle(s), regenerated puzzles.ts + schedule.ts + schedule.json.`
+    `\nWrote ${created} puzzle(s), regenerated puzzles.ts + schedule.ts + schedule.json + puzzleStats.json.`
   );
 }
 

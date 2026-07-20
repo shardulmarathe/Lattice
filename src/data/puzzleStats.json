@@ -81,27 +81,63 @@
     "minMirrors": 13
   },
   "29": {
-    "minMirrors": 12
+    "minMirrors": 10
   },
   "30": {
-    "minMirrors": 12
+    "minMirrors": 9
   },
   "31": {
-    "minMirrors": 12
+    "minMirrors": 11
   },
   "32": {
-    "minMirrors": 12
+    "minMirrors": 11
   },
   "33": {
-    "minMirrors": 13
+    "minMirrors": 12
   },
   "34": {
-    "minMirrors": 12
+    "minMirrors": 11
   },
   "35": {
-    "minMirrors": 12
+    "minMirrors": 9
   },
   "36": {
-    "minMirrors": 13
+    "minMirrors": 11
+  },
+  "37": {
+    "minMirrors": 9
+  },
+  "38": {
+    "minMirrors": 10
+  },
+  "39": {
+    "minMirrors": 10
+  },
+  "40": {
+    "minMirrors": 9
+  },
+  "41": {
+    "minMirrors": 11
+  },
+  "42": {
+    "minMirrors": 11
+  },
+  "43": {
+    "minMirrors": 9
+  },
+  "44": {
+    "minMirrors": 9
+  },
+  "45": {
+    "minMirrors": 10
+  },
+  "46": {
+    "minMirrors": 12
+  },
+  "47": {
+    "minMirrors": 9
+  },
+  "48": {
+    "minMirrors": 9
   }
 }

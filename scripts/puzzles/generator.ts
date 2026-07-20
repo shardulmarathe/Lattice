@@ -23,16 +23,33 @@ import type {
 import { calculateLaserPath } from "../../src/lib/laserEngine";
 import { validateSequence } from "../../src/lib/validation";
 import { grade, type GradeResult } from "./grader";
-import { solveExactMin, type ExactMinResult } from "./exactMin";
+import { solveExactMin, countMinSolutions, type ExactMinResult } from "./exactMin";
 import {
   GRID_MIN,
   GRID_MAX,
   MIN_EXACT_MIRRORS,
+  BEST_OF_N,
+  CRAFT_REUSE_WEIGHT,
+  minCraft,
+  SOLUTION_COUNT_CAP,
+  RIGIDITY_WEIGHT,
+  INVERSION_WEIGHT,
+  COUNT_MIN_OPTIONS,
   EXACT_MIN_GEN_OPTIONS,
   rollParams,
   type GenParams,
 } from "./config";
 import { makeRng, type Rng } from "./rng";
+
+/** Structural difficulty of a solution: how non-obvious the routing is. */
+export interface Craft {
+  /** Mirrors the beam strikes from ≥2 distinct directions (one placement, two roles). */
+  reuse: number;
+  /** Empty cells the beam passes through ≥2 times (self-crossings). */
+  crossings: number;
+  /** Weighted craft score (reuse·CRAFT_REUSE_WEIGHT + crossings). */
+  score: number;
+}
 
 export interface GeneratedPuzzle {
   /** Puzzle without an id — the codegen step assigns ids. */
@@ -40,6 +57,12 @@ export interface GeneratedPuzzle {
   solution: MirrorPlacement[];
   params: GenParams;
   grade: GradeResult;
+  /** Craft of the shipped MINIMAL solution (the player-facing difficulty signal). */
+  craft: Craft;
+  /** Distinct minimal solutions (capped) — 1 is maximally rigid/forced. */
+  solutions: number;
+  /** Number pairs whose spatial order fights the source→flag flow (routing must weave). */
+  inversions: number;
   /** Proven exact min (or lower bound) from the difficulty gate — reused by the
    * codegen step so the shipped daily records its minimum + HINT witness without
    * solving twice. */
@@ -90,8 +113,12 @@ function orientationFor(inDir: Direction, outDir: Direction): MirrorOrientation 
   return null;
 }
 
-/** Chance the source sits in the interior (like puzzle #8) rather than on an edge. */
-const SOURCE_INTERIOR_PROB = 0.5;
+/**
+ * Chance the source sits in the interior (like puzzle #8) rather than on an edge.
+ * Raised above ½: an interior source must be routed on all four sides rather than
+ * fired cleanly inward, a real difficulty jump.
+ */
+const SOURCE_INTERIOR_PROB = 0.65;
 
 const ALL_DIRECTIONS: Direction[] = ["up", "down", "left", "right"];
 
@@ -223,9 +250,48 @@ export function puzzleHash(puzzle: Omit<Puzzle, "id">): string {
 /** Probability of turning (placing a mirror) when both straight and turn are viable. */
 const TURN_BIAS = 0.7;
 
+// Reuse-seeking steer: when the walk turns, bias it toward directions that send the
+// beam into an existing mirror (→ reuse) or a previously-visited cell (→ crossing),
+// pulling the construction into compact, self-reusing shapes instead of a readable
+// sweep. This puts genuine reuse in the constructed solution, which is what lets the
+// craft ranking surface boards whose MINIMAL solution also needs it. Nearer targets
+// weigh more (score divided by distance).
+const STEER_LOOKAHEAD = 5;
+const STEER_REUSE_WEIGHT = 6; // turn steers into an existing mirror → reuse
+const STEER_CROSS_WEIGHT = 3; // turn steers into a visited empty cell → crossing
+const STEER_BASE_WEIGHT = 1; // turn heads into fresh territory
+
 interface Walk {
   visited: Position[];
   mirrors: Map<string, MirrorOrientation>;
+}
+
+/**
+ * How strongly turning into `dir` from (x, y) steers the beam toward the raw material
+ * of craft: scan ahead until the first already-decided cell or a wall. A mirror hit
+ * (reuse) scores highest, a visited straight-through cell (crossing) next, fresh
+ * territory lowest — all attenuated by distance.
+ */
+function steerWeight(
+  x: number,
+  y: number,
+  dir: Direction,
+  decisions: Map<string, MirrorOrientation | "S">,
+  inBounds: (nx: number, ny: number) => boolean
+): number {
+  const v = DIRECTION_VECTORS[dir];
+  let nx = x + v.dx;
+  let ny = y + v.dy;
+  for (let d = 1; d <= STEER_LOOKAHEAD; d++) {
+    if (!inBounds(nx, ny)) break;
+    const cell = decisions.get(key(nx, ny));
+    if (cell !== undefined) {
+      return (cell === "S" ? STEER_CROSS_WEIGHT : STEER_REUSE_WEIGHT) / d;
+    }
+    nx += v.dx;
+    ny += v.dy;
+  }
+  return STEER_BASE_WEIGHT;
 }
 
 /**
@@ -287,8 +353,18 @@ function buildWalk(
         const straights = valid.filter((o) => !o.turn);
         const wantTurn = mirrorCount < targetMirrors && turns.length > 0;
         let chosen;
-        if (wantTurn && (rng.next() < TURN_BIAS || straights.length === 0)) chosen = rng.pick(turns);
-        else if (straights.length > 0) chosen = rng.pick(straights);
+        if (wantTurn && (rng.next() < TURN_BIAS || straights.length === 0)) {
+          // Choose the turn direction, weighted toward reuse/crossing rather than
+          // uniformly, so the walk folds back onto itself and its mirrors.
+          chosen = weightedSample(
+            rng,
+            turns.map((o) => ({
+              item: o,
+              weight: steerWeight(x, y, o.dir, decisions, inBounds),
+            })),
+            1
+          )[0];
+        } else if (straights.length > 0) chosen = rng.pick(straights);
         else chosen = rng.pick(valid);
 
         decisions.set(k, chosen.decision);
@@ -313,6 +389,89 @@ function buildWalk(
   return { visited, mirrors };
 }
 
+/**
+ * Sample `count` items WITHOUT replacement, biased by weight (Efraimidis–Spirakis):
+ * each item draws a key `rng^(1/weight)` and we keep the largest keys. Higher weight
+ * → drawn earlier on average, but every positive-weight item stays reachable, so it
+ * degrades gracefully to a plain shuffle when all weights are equal.
+ */
+function weightedSample<T>(
+  rng: Rng,
+  weighted: { item: T; weight: number }[],
+  count: number
+): T[] {
+  return weighted
+    .map(({ item, weight }) => ({
+      item,
+      sortKey: Math.pow(rng.next(), 1 / Math.max(weight, 1e-9)),
+    }))
+    .sort((a, b) => b.sortKey - a.sortKey)
+    .slice(0, count)
+    .map((k) => k.item);
+}
+
+/**
+ * Craft of a solution as the player experiences it: replay the beam with `solution`
+ * and count (a) mirrors struck from ≥2 distinct directions — a single placement doing
+ * double duty, the hardest thing to see — and (b) empty cells the beam self-crosses.
+ * A high score means the routing is interdependent and non-obvious; a flat sweep
+ * scores ~0. Measured on the MINIMAL solution, not the dense construction scaffold.
+ */
+function measureCraft(puzzle: Puzzle, solution: MirrorPlacement[]): Craft {
+  const res = calculateLaserPath(puzzle, solution);
+  const mirrorKeys = new Set(solution.map((m) => key(m.x, m.y)));
+  const cells = res.visitedCells;
+  const hits = new Map<string, number>();
+  const inDirs = new Map<string, Set<string>>();
+  for (let i = 0; i < cells.length; i++) {
+    const k = key(cells[i].x, cells[i].y);
+    hits.set(k, (hits.get(k) ?? 0) + 1);
+    if (i > 0) {
+      const dir = stepDir(cells[i - 1], cells[i]);
+      let set = inDirs.get(k);
+      if (!set) inDirs.set(k, (set = new Set()));
+      set.add(dir);
+    }
+  }
+  let reuse = 0;
+  let crossings = 0;
+  for (const [k, count] of hits) {
+    if (mirrorKeys.has(k)) {
+      if ((inDirs.get(k)?.size ?? 0) >= 2) reuse++;
+    } else if (count >= 2) {
+      crossings++;
+    }
+  }
+  return { reuse, crossings, score: reuse * CRAFT_REUSE_WEIGHT + crossings };
+}
+
+/**
+ * Count number pairs whose spatial order (projected onto the source→flag axis) runs
+ * opposite to their required collection order. High = the beam must weave back against
+ * the natural flow to hit them in sequence, rather than sweep straight through.
+ */
+function orderingInversions(
+  numbers: { x: number; y: number }[],
+  source: SourceConfig,
+  flag: Position
+): number {
+  let ax = flag.x - source.x;
+  let ay = flag.y - source.y;
+  if (ax === 0 && ay === 0) {
+    // Degenerate axis: fall back to the source's firing direction.
+    ax = DIRECTION_VECTORS[source.direction].dx;
+    ay = DIRECTION_VECTORS[source.direction].dy;
+  }
+  const proj = numbers.map((n) => n.x * ax + n.y * ay);
+  let inversions = 0;
+  for (let i = 0; i < proj.length; i++) {
+    for (let j = i + 1; j < proj.length; j++) {
+      if (proj[j] < proj[i]) inversions++; // collected later but spatially earlier
+    }
+  }
+  return inversions;
+}
+
 /** One construction attempt. Returns a graded candidate or null on any failure. */
 function attempt(
   rng: Rng,
@@ -322,6 +481,9 @@ function attempt(
   solution: MirrorPlacement[];
   params: GenParams;
   grade: GradeResult;
+  craft: Craft;
+  solutions: number;
+  inversions: number;
   exact: ExactMinResult;
 } | null {
   const params = rollParams(rng, gridSize);
@@ -376,15 +538,29 @@ function attempt(
   const numbers = chosen.map((c, i) => ({ value: digits[i], x: c.x, y: c.y }));
   const code = digits.join("");
 
-  // Obstacles on cells the solution path never visits.
+  // Obstacles on cells the solution path never visits. Rather than scatter them
+  // uniformly (where most land inertly in dead corners), we weight each candidate
+  // by how tightly it hugs the solution beam: a free cell wedged against the path
+  // is exactly where a cheaper, lower-mirror alternative routing would try to cut
+  // through, so blocking it raises the proven exact minimum measured by the gate
+  // below. Cells with no path neighbor do nothing for difficulty and are kept only
+  // as a low-weight fallback. Obstacles never sit on the path itself, so the
+  // intended solution is unaffected (and is re-verified against the real engine).
   const visitedKeys = new Set(walk.visited.map((c) => key(c.x, c.y)));
-  const freeCells: Position[] = [];
+  const freeCells: { item: Position; weight: number }[] = [];
   for (let gx = 0; gx < gridSize; gx++) {
     for (let gy = 0; gy < gridSize; gy++) {
-      if (!visitedKeys.has(key(gx, gy))) freeCells.push({ x: gx, y: gy });
+      if (visitedKeys.has(key(gx, gy))) continue;
+      let pathNeighbors = 0;
+      for (const { dx, dy } of Object.values(DIRECTION_VECTORS)) {
+        if (visitedKeys.has(key(gx + dx, gy + dy))) pathNeighbors++;
+      }
+      // Strong preference for path-adjacent cells; the +0.2 floor keeps isolated
+      // cells eligible when there aren't enough good candidates.
+      freeCells.push({ item: { x: gx, y: gy }, weight: pathNeighbors * 3 + 0.2 });
     }
   }
-  const obstacles = rng.shuffle(freeCells).slice(0, params.obstacleCount);
+  const obstacles = weightedSample(rng, freeCells, params.obstacleCount);
 
   const puzzle: Omit<Puzzle, "id"> = {
     code,
@@ -428,18 +604,48 @@ function attempt(
   });
   if (g.solvableWithinCap) return null; // a cheaper shortcut exists → too easy
 
-  // (4) Difficulty gate: the PROVEN exact minimum must meet the floor. This is the
-  // only reliable difficulty signal (constructed density is decorative — see
-  // MIN_EXACT_MIRRORS). A board with a cheap true solution is proven and rejected
-  // quickly; only genuinely hard boards pay the full solve. When the solver
-  // node-caps without a witness we accept only if it already PROVED a ≥-floor lower
-  // bound, and reject the ambiguous middle (conservative — the nightly solver would
-  // refine it, but we won't ship a daily we can't vouch for as hard).
+  // (4) Difficulty gate: the exact minimum must be PROVEN (a witness exists) and meet
+  // the floor. We require a proven witness — not just a node-capped lower bound —
+  // because craft (gate 5) can only be measured on the minimal solution the player
+  // actually finds. A node-capped board is genuinely hard but craft-unmeasurable, so
+  // we drop it and let generation fall back to a size whose minimum we can prove
+  // (which also tend to be the fast, high-craft 7×7/8×8 boards). A cheap board is
+  // proven-and-rejected quickly; only genuinely hard boards pay the full solve.
   const exact = solveExactMin(full, EXACT_MIN_GEN_OPTIONS);
-  const provenMin = exact.minMirrors ?? exact.minMirrorsAtLeast ?? 0;
-  if (provenMin < MIN_EXACT_MIRRORS) return null; // too easy, or not provably hard enough
+  if (exact.minMirrors === undefined) return null; // no proven witness → craft unmeasurable
+  if (exact.minMirrors < MIN_EXACT_MIRRORS) return null; // too easy
 
-  return { puzzle, solution, params, grade: g, exact };
+  // (5) Craft gate: score the MINIMAL solution's non-obviousness (mirror reuse +
+  // beam crossings). A dense-but-readable sweep is rejected here even though it has
+  // enough mirrors. Only proven candidates carry a witness we can measure; a rare
+  // node-capped board has no witness, so it skips this gate (craft 0) and best-of-N
+  // ranking parks it below any crafty proven board.
+  const craft = exact.solution
+    ? measureCraft(full, exact.solution)
+    : { reuse: 0, crossings: 0, score: 0 };
+  if (exact.solution && craft.score < minCraft(gridSize)) return null; // solution too obvious
+
+  // (6) Rigidity: count minimal solutions (capped). Fewer = every mirror more forced.
+  // Folded into the difficulty ranking (not gated) so it never causes a generation
+  // failure — it just makes best-of-N prefer the more rigid of otherwise-similar boards.
+  // An aborted enumeration (unknown) is treated as the cap (least rigid), so we never
+  // over-credit a board we couldn't verify.
+  const counted = countMinSolutions(full, exact.minMirrors!, SOLUTION_COUNT_CAP, COUNT_MIN_OPTIONS.nodeCap);
+  const solutions = counted.aborted ? SOLUTION_COUNT_CAP : counted.count;
+
+  // (7) Ordering inversions: how much the number layout fights the source→flag flow.
+  const inversions = orderingInversions(numbers, source, flag);
+
+  return {
+    puzzle,
+    solution,
+    params,
+    grade: g,
+    craft,
+    solutions,
+    inversions,
+    exact,
+  };
 }
 
 /** All grid sizes, deterministically ordered per date so the preferred size is
@@ -450,11 +656,53 @@ function sizeOrderForDate(dateKey: string): number[] {
   return makeRng(`${dateKey}:size`).shuffle(sizes);
 }
 
+/** Proven exact minimum (or its lower bound). */
+function provenMinOf(g: { exact: ExactMinResult }): number {
+  return g.exact.minMirrors ?? g.exact.minMirrorsAtLeast ?? 0;
+}
+
+/**
+ * Composite difficulty: craft (non-obvious path) plus rigidity (few solutions forces
+ * every placement). `SOLUTION_COUNT_CAP − solutions` rewards near-unique boards, so a
+ * uniquely-solvable board outranks an equally-crafty one with many solutions.
+ */
+function difficultyScore(g: GeneratedPuzzle): number {
+  return (
+    g.craft.score +
+    RIGIDITY_WEIGHT * (SOLUTION_COUNT_CAP - g.solutions) +
+    INVERSION_WEIGHT * g.inversions
+  );
+}
+
+/**
+ * Rank two passing candidates hardest-first by the composite difficulty score (craft +
+ * rigidity). Ties fall back to raw craft, proven exact min, then a proven witness
+ * (HINT support day one), the grader score, and finally seed order for determinism.
+ */
+function harderFirst(a: GeneratedPuzzle, b: GeneratedPuzzle): number {
+  const byDifficulty = difficultyScore(b) - difficultyScore(a);
+  if (byDifficulty !== 0) return byDifficulty;
+  const byCraft = b.craft.score - a.craft.score;
+  if (byCraft !== 0) return byCraft;
+  const byMin = provenMinOf(b) - provenMinOf(a);
+  if (byMin !== 0) return byMin;
+  const aProven = a.exact.minMirrors !== undefined ? 1 : 0;
+  const bProven = b.exact.minMirrors !== undefined ? 1 : 0;
+  if (aProven !== bProven) return bProven - aProven;
+  const byScore = b.grade.score - a.grade.score;
+  if (byScore !== 0) return byScore;
+  return a.seed < b.seed ? -1 : a.seed > b.seed ? 1 : 0;
+}
+
 /**
  * Generate one extra-hard puzzle for a date. Deterministic given `dateKey`.
  * Grid size is chosen per date (uniform), falling back through other sizes only
  * if the preferred size can't produce a valid puzzle. `existingHashes` prevents
  * duplicates against already-published puzzles.
+ *
+ * Best-of-N: within the first size that yields any valid board, keep going until
+ * BEST_OF_N candidates clear the floor (or the attempt budget runs out), then ship
+ * the hardest by proven exact min — not merely the first one over the floor.
  */
 export function generatePuzzle(
   dateKey: string,
@@ -462,13 +710,19 @@ export function generatePuzzle(
 ): GeneratedPuzzle | null {
   let totalAttempts = 0;
   for (const gridSize of sizeOrderForDate(dateKey)) {
+    const passing: GeneratedPuzzle[] = [];
     for (let a = 1; a <= ATTEMPTS_PER_SIZE; a++) {
       totalAttempts++;
       const seed = `${dateKey}:${gridSize}:${a}`;
       const candidate = attempt(makeRng(seed), gridSize);
       if (!candidate) continue;
       if (existingHashes.has(puzzleHash(candidate.puzzle))) continue;
-      return { ...candidate, seed, attempts: totalAttempts };
+      passing.push({ ...candidate, seed, attempts: totalAttempts });
+      if (passing.length >= BEST_OF_N) break;
+    }
+    if (passing.length > 0) {
+      passing.sort(harderFirst);
+      return passing[0];
     }
   }
   return null;

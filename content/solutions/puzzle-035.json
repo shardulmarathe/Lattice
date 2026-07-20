@@ -1,54 +1,14 @@
 {
   "id": 35,
   "scheduledDate": "2026-07-26",
-  "code": "354273",
+  "code": "2638",
   "gridSize": 6,
-  "seed": "2026-07-26:6:141",
+  "seed": "2026-07-26:6:134",
   "solutionMirrors": [
     {
-      "x": 1,
-      "y": 3,
-      "orientation": "/"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "orientation": "/"
-    },
-    {
       "x": 4,
       "y": 1,
-      "orientation": "\\"
-    },
-    {
-      "x": 4,
-      "y": 4,
       "orientation": "/"
-    },
-    {
-      "x": 3,
-      "y": 4,
-      "orientation": "\\"
-    },
-    {
-      "x": 3,
-      "y": 3,
-      "orientation": "\\"
-    },
-    {
-      "x": 2,
-      "y": 3,
-      "orientation": "\\"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "orientation": "/"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "orientation": "\\"
     },
     {
       "x": 5,
@@ -57,12 +17,57 @@
     },
     {
       "x": 5,
-      "y": 3,
+      "y": 2,
       "orientation": "/"
     },
     {
       "x": 3,
       "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 4,
       "orientation": "\\"
     },
     {
@@ -74,18 +79,13 @@
       "x": 0,
       "y": 5,
       "orientation": "\\"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "orientation": "/"
     }
   ],
   "mirrorCount": 15,
   "mirrorDensity": 0.417,
   "solverCap": 4,
-  "minMirrors": 12,
-  "pathLength": 33,
+  "minMirrors": 9,
+  "pathLength": 30,
   "obstacleInterference": 5,
-  "score": 32.69
+  "score": 30.69
 }

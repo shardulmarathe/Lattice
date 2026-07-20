@@ -108,6 +108,160 @@ const W_SOLVED = 0; // full path collects the exact code and reaches the flag
 const W_DEAD = 1; // locked-prefix digit mismatch, or no undecided cell left
 const W_BRANCH = 2; // undecided empty cell found; branch state saved
 
+export interface SolutionCount {
+  /** Distinct minimal solutions found, capped at `cap`. */
+  count: number;
+  /** True when the count hit `cap` (there may be more) — i.e. NOT rigid. */
+  capped: boolean;
+  /** True when a node cap stopped the enumeration before it was exhaustive. */
+  aborted: boolean;
+}
+
+/**
+ * Count DISTINCT solutions that use exactly `budget` mirrors, up to `cap`. Called
+ * with budget = the proven exact minimum, it counts minimal solutions — the rigidity
+ * signal. A board with one minimal solution forces every mirror placement (brutal);
+ * one with many is forgiving. We stop at `cap` because "few vs many" is all that
+ * matters for difficulty ranking, which keeps the cost bounded.
+ *
+ * Enumeration differs from solveExactMin in one way: a solve is only COUNTED once the
+ * path is fully committed (no undecided cell left), so each distinct mirror set is
+ * reached exactly once via its own leaf. Every counted solution is re-validated with
+ * the real engine, so the count can never include a phantom.
+ */
+export function countMinSolutions(
+  puzzle: Puzzle,
+  budget: number,
+  cap: number,
+  nodeCap = 200_000_000
+): SolutionCount {
+  const size = puzzle.gridSize;
+  const cellCount = size * size;
+  const maxSteps = cellCount * 4;
+
+  const cellType = new Int8Array(cellCount);
+  const cellDigit = new Int8Array(cellCount);
+  for (const o of puzzle.obstacles) cellType[o.y * size + o.x] = T_OBSTACLE;
+  for (const n of puzzle.numbers) {
+    cellType[n.y * size + n.x] = T_NUMBER;
+    cellDigit[n.y * size + n.x] = n.value;
+  }
+  cellType[puzzle.source.y * size + puzzle.source.x] = T_SOURCE;
+  cellType[puzzle.flag.y * size + puzzle.flag.x] = T_FLAG;
+
+  const isEmpty = new Uint8Array(cellCount);
+  for (const c of emptyCells(puzzle)) isEmpty[c.y * size + c.x] = 1;
+
+  const codeDigits = Int8Array.from(puzzle.code, Number);
+  const codeLen = codeDigits.length;
+
+  const startX = puzzle.source.x;
+  const startY = puzzle.source.y;
+  const startDir = DIR_CODE[puzzle.source.direction];
+
+  const decision = new Int8Array(cellCount);
+  let bCell = 0;
+  let bBranch = false; // an undecided empty cell was seen on the walk
+  let count = 0;
+  let nodes = 0;
+  let aborted = false;
+
+  // Walk from the source, same solve semantics as solveExactMin (a solve is reported
+  // the moment the beam collects the full code and hits the flag). `bBranch`/`bCell`
+  // expose the first undecided empty cell so the caller can, at a solved node, explore
+  // only the MIRROR alternatives at it — the straight alternative is the very solution
+  // just counted, so skipping it avoids double-counting while missing none.
+  const walk = (): number => {
+    let x = startX;
+    let y = startY;
+    let dir = startDir;
+    let codeIndex = 0;
+    bBranch = false;
+    let branchFound = false;
+    for (let steps = 0; steps < maxSteps; steps++) {
+      const idx = y * size + x;
+      const t = cellType[idx];
+      if (t === T_NUMBER) {
+        if (codeIndex < codeLen && cellDigit[idx] === codeDigits[codeIndex]) codeIndex++;
+        else if (!branchFound) return W_DEAD;
+        else return W_BRANCH;
+      } else if (t === T_FLAG) {
+        if (codeIndex === codeLen && codeLen > 0) return W_SOLVED;
+        return branchFound ? W_BRANCH : W_DEAD;
+      } else if (t === T_EMPTY) {
+        const d = decision[idx];
+        if (d === D_SLASH) dir = REFLECT_SLASH[dir];
+        else if (d === D_BACKSLASH) dir = REFLECT_BACKSLASH[dir];
+        else if (d === D_NONE && !branchFound && isEmpty[idx]) {
+          branchFound = true;
+          bBranch = true;
+          bCell = idx;
+        }
+      }
+      const nx = x + DX[dir];
+      const ny = y + DY[dir];
+      if (nx < 0 || nx >= size || ny < 0 || ny >= size) break;
+      if (cellType[ny * size + nx] === T_OBSTACLE) break;
+      x = nx;
+      y = ny;
+    }
+    return branchFound ? W_BRANCH : W_DEAD;
+  };
+
+  const countCurrent = (): void => {
+    const mirrors: MirrorPlacement[] = [];
+    for (let idx = 0; idx < cellCount; idx++) {
+      if (decision[idx] === D_SLASH || decision[idx] === D_BACKSLASH) {
+        mirrors.push({
+          x: idx % size,
+          y: Math.floor(idx / size),
+          orientation: decision[idx] === D_SLASH ? "/" : "\\",
+        });
+      }
+    }
+    const laser = calculateLaserPath(puzzle, mirrors);
+    if (validateSequence(puzzle.code, laser).isComplete) count++;
+  };
+
+  const dfs = (mirrorCount: number): void => {
+    if (count >= cap || aborted) return; // enough to rank "few vs many"; stop early
+    nodes++;
+    if (nodes >= nodeCap) {
+      aborted = true;
+      return;
+    }
+    const outcome = walk();
+    const branchExists = bBranch;
+    const cell = bCell;
+    if (outcome === W_SOLVED) {
+      countCurrent(); // this counts the straight-at-`cell` completion
+      // Explore only the mirror variants at the branch cell (straight is counted).
+      if (branchExists && mirrorCount < budget) {
+        decision[cell] = D_SLASH;
+        dfs(mirrorCount + 1);
+        decision[cell] = D_BACKSLASH;
+        dfs(mirrorCount + 1);
+        decision[cell] = D_NONE;
+      }
+      return;
+    }
+    if (outcome === W_DEAD) return;
+    if (mirrorCount >= budget) return;
+
+    // W_BRANCH (not yet solved): try all three at the branch cell.
+    decision[cell] = D_SLASH;
+    dfs(mirrorCount + 1);
+    decision[cell] = D_BACKSLASH;
+    dfs(mirrorCount + 1);
+    decision[cell] = D_STRAIGHT;
+    dfs(mirrorCount);
+    decision[cell] = D_NONE;
+  };
+
+  dfs(0);
+  return { count, capped: count >= cap, aborted };
+}
+
 export function solveExactMin(
   puzzle: Puzzle,
   options: ExactMinOptions = {}

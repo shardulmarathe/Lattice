@@ -34,6 +34,18 @@ import { PUZZLE_033 } from "./drafts/puzzle-033";
 import { PUZZLE_034 } from "./drafts/puzzle-034";
 import { PUZZLE_035 } from "./drafts/puzzle-035";
 import { PUZZLE_036 } from "./drafts/puzzle-036";
+import { PUZZLE_037 } from "./drafts/puzzle-037";
+import { PUZZLE_038 } from "./drafts/puzzle-038";
+import { PUZZLE_039 } from "./drafts/puzzle-039";
+import { PUZZLE_040 } from "./drafts/puzzle-040";
+import { PUZZLE_041 } from "./drafts/puzzle-041";
+import { PUZZLE_042 } from "./drafts/puzzle-042";
+import { PUZZLE_043 } from "./drafts/puzzle-043";
+import { PUZZLE_044 } from "./drafts/puzzle-044";
+import { PUZZLE_045 } from "./drafts/puzzle-045";
+import { PUZZLE_046 } from "./drafts/puzzle-046";
+import { PUZZLE_047 } from "./drafts/puzzle-047";
+import { PUZZLE_048 } from "./drafts/puzzle-048";
 import { getScheduledPuzzleId } from "./schedule";
 
 export const PUZZLE_001: Puzzle = {
@@ -93,6 +105,18 @@ export const PUZZLES: Puzzle[] = [
   PUZZLE_034,
   PUZZLE_035,
   PUZZLE_036,
+  PUZZLE_037,
+  PUZZLE_038,
+  PUZZLE_039,
+  PUZZLE_040,
+  PUZZLE_041,
+  PUZZLE_042,
+  PUZZLE_043,
+  PUZZLE_044,
+  PUZZLE_045,
+  PUZZLE_046,
+  PUZZLE_047,
+  PUZZLE_048,
 ];
 
 export { PUZZLE_002 } from "./drafts/puzzle-002";
@@ -129,6 +153,18 @@ export { PUZZLE_033 } from "./drafts/puzzle-033";
 export { PUZZLE_034 } from "./drafts/puzzle-034";
 export { PUZZLE_035 } from "./drafts/puzzle-035";
 export { PUZZLE_036 } from "./drafts/puzzle-036";
+export { PUZZLE_037 } from "./drafts/puzzle-037";
+export { PUZZLE_038 } from "./drafts/puzzle-038";
+export { PUZZLE_039 } from "./drafts/puzzle-039";
+export { PUZZLE_040 } from "./drafts/puzzle-040";
+export { PUZZLE_041 } from "./drafts/puzzle-041";
+export { PUZZLE_042 } from "./drafts/puzzle-042";
+export { PUZZLE_043 } from "./drafts/puzzle-043";
+export { PUZZLE_044 } from "./drafts/puzzle-044";
+export { PUZZLE_045 } from "./drafts/puzzle-045";
+export { PUZZLE_046 } from "./drafts/puzzle-046";
+export { PUZZLE_047 } from "./drafts/puzzle-047";
+export { PUZZLE_048 } from "./drafts/puzzle-048";
 
 export function getPuzzleById(id: number): Puzzle | undefined {
   return PUZZLES.find((p) => p.id === id);
