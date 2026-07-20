@@ -42,5 +42,9 @@
   "26": {
     "solved": true,
     "minMirrors": 9
+  },
+  "36": {
+    "solved": true,
+    "minMirrors": 13
   }
 }
