@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDailyRollover } from "@/hooks/useDailyRollover";
 import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
 import PastGamesModal from "./Archive/PastGamesModal";
@@ -17,6 +18,10 @@ export default function HomeScreen() {
   const [isOverButtons, setIsOverButtons] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showPastGames, setShowPastGames] = useState(false);
+
+  // Reload in place at rollover so the bundle and the prefetches below aren't
+  // still pointing at yesterday's daily. Home is the menu, so stay on it.
+  useDailyRollover({ atMidnight: true, destination: "/" });
 
   useEffect(() => {
     setMounted(true);

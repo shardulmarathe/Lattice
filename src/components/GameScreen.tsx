@@ -31,6 +31,7 @@ import HowToPlayModal from "@/components/HowToPlayModal";
 import PauseOverlay from "@/components/PauseOverlay";
 import TargetCodeIntro from "@/components/Game/TargetCodeIntro";
 import { useTimer } from "@/hooks/useTimer";
+import { useDailyRollover } from "@/hooks/useDailyRollover";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
 
 const COMPLETION_NAV_DELAY_MS = 350;
@@ -77,6 +78,13 @@ export default function GameScreen() {
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
   const wantsReplay = searchParams.get("replay") === "1";
+  // A tab left open overnight has yesterday's puzzle frozen in the memo above.
+  // Deliberately not `atMidnight` — a solve running at 23:59 is never yanked;
+  // the swap waits until the player leaves the tab and comes back.
+  useDailyRollover({
+    enabled: searchParams.get("puzzle") === null,
+    destination: "/play",
+  });
   // Replaying a puzzle that already has a canonical solve runs as a practice
   // session — it never overwrites the recorded time.
   const [mode] = useState<GameMode>(() =>

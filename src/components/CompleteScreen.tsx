@@ -18,6 +18,7 @@ import {
   getSpeedScore,
 } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
+import { useDailyRollover } from "@/hooks/useDailyRollover";
 
 const ACCENT = "#FF2D2D";
 
@@ -108,6 +109,13 @@ export default function CompleteScreen() {
   // A practice run's completion: same victory screen, but Replay-only — the
   // recorded time (read from the record slot) is untouched and not re-shared.
   const isPractice = searchParams.get("practice") === "1";
+  // Nothing is at stake on this screen, so when the countdown below reaches
+  // 00:00:00 we go straight into the new day's board.
+  useDailyRollover({
+    enabled: searchParams.get("puzzle") === null,
+    atMidnight: true,
+    destination: "/play",
+  });
 
   // The daily is a one-time solve — no replay. Only past puzzles can be replayed.
   const isDaily = useMemo(
