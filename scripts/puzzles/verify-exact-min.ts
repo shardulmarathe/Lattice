@@ -17,8 +17,8 @@ import puzzleStats from "@/data/puzzleStats.json";
 import { solveExactMin } from "./exactMin";
 
 /** Curated (hand-solved) values the solver never proved.
- * Currently empty: #17's curated 18 was machine-corrected to a proven 16 on
- * 2026-07-09. */
+ * Currently empty: #17's curated 18 was machine-checked and corrected to a
+ * proven 16. See ARCHITECTURE.md. */
 const CURATED_IDS = new Set<number>([]);
 
 const idsArg = process.argv.find((a) => a.startsWith("--ids="));

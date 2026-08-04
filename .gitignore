@@ -43,3 +43,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local editor config
+.cursor/
+.claude/
+
+# local scratch notes
+/*.txt
+handoff*.md
