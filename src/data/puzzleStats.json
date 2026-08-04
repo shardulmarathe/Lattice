@@ -139,5 +139,14 @@
   },
   "48": {
     "minMirrors": 9
+  },
+  "49": {
+    "minMirrors": 12
+  },
+  "50": {
+    "minMirrors": 9
+  },
+  "51": {
+    "minMirrors": 11
   }
 }

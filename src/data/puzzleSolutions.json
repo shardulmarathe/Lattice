@@ -2517,5 +2517,171 @@
       "y": 5,
       "orientation": "/"
     }
+  ],
+  "49": [
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 7,
+      "orientation": "/"
+    }
+  ],
+  "50": [
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "orientation": "/"
+    }
+  ],
+  "51": [
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "orientation": "/"
+    }
   ]
 }
