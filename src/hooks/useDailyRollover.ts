@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { formatDateKey } from "@/data/schedule";
 
 interface UseDailyRolloverOptions {
-  /** Off for archived puzzles (`?puzzle=N`) — those are a deliberate choice. */
+  /** Off for archived puzzles (`?puzzle=N`), those are a deliberate choice. */
   enabled?: boolean;
   /**
    * Also fire the moment local midnight passes with the tab already visible.
@@ -51,7 +51,7 @@ export function useDailyRollover({
 
     const check = () => {
       if (firedRef.current) return;
-      // A hidden tab has nothing to show — the visibility handler catches up
+      // A hidden tab has nothing to show, the visibility handler catches up
       // when the player comes back.
       if (document.visibilityState !== "visible") return;
       if (formatDateKey(new Date()) === dayKeyRef.current) return;
@@ -76,7 +76,7 @@ export function useDailyRollover({
     window.addEventListener("pageshow", check);
 
     // Background tabs throttle timers hard, so this is a best-effort nudge for
-    // a visible tab — the listeners above are what make the feature reliable.
+    // a visible tab, the listeners above are what make the feature reliable.
     const armMidnightTimer = () => {
       if (!atMidnight || firedRef.current) return;
       midnightTimer = setTimeout(() => {

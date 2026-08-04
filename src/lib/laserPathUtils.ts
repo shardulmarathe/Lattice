@@ -77,7 +77,7 @@ export function hasOpposingMirrorHits(
   return (fromEast && fromWest) || (fromNorth && fromSouth);
 }
 
-/** Near-center placement when hit from opposing sides — slight up-left nudge. */
+/** Near-center placement when hit from opposing sides, slight up-left nudge. */
 export const OPPOSING_MIRROR_VISUAL_OFFSET: PathPoint = { x: -1.2, y: -1.2 };
 
 function getGridDirection(
@@ -112,32 +112,32 @@ export function getMirrorVisualOffset(
     return { x: -3.35, y: -3.35 };
   }
 
-  // Locked: from the south (beam travels up), / mirror (y = x) — left + up
+  // Locked: from the south (beam travels up), / mirror (y = x), left + up
   if (incomingDir.dy < 0 && orientation === "/") {
     return { x: -3.35, y: -3.35 };
   }
 
-  // Locked: from the south (beam travels up), \ mirror (y = -x) — right + up
+  // Locked: from the south (beam travels up), \ mirror (y = -x), right + up
   if (incomingDir.dy < 0 && orientation === "\\") {
     return { x: 1.9, y: -1.9 };
   }
 
-  // Locked: from the west (beam travels right), \ mirror (y = -x) — right + up
+  // Locked: from the west (beam travels right), \ mirror (y = -x), right + up
   if (incomingDir.dx > 0 && orientation === "\\") {
     return { x: 1.9, y: -1.9 };
   }
 
-  // Locked: from the west (beam travels right), / mirror (y = x) — right + down
+  // Locked: from the west (beam travels right), / mirror (y = x), right + down
   if (incomingDir.dx > 0 && orientation === "/") {
     return { x: 1.65, y: 1.65 };
   }
 
-  // Locked: from the north (beam travels down), / mirror (y = x) — right + down
+  // Locked: from the north (beam travels down), / mirror (y = x), right + down
   if (incomingDir.dy > 0 && orientation === "/") {
     return { x: 1.3, y: 1.3 };
   }
 
-  // From the north (beam travels down), \ mirror (y = -x) — left + up
+  // From the north (beam travels down), \ mirror (y = -x), left + up
   if (incomingDir.dy > 0 && orientation === "\\") {
     return { x: -2.9, y: -0.1 };
   }
@@ -182,7 +182,7 @@ export function toPixel(
   };
 }
 
-/** Laser always follows cell centers — no mirror clipping. */
+/** Laser always follows cell centers, no mirror clipping. */
 export function segmentToPixels(
   segment: LaserSegment,
   cellSize: number

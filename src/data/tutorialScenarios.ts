@@ -9,7 +9,7 @@ export interface TutorialTap {
 /**
  * One beam pass within a demo loop. A scenario with two phases first draws
  * the phase-1 beam (e.g. straight, mirror-less), holds it, then switches to
- * the phase-2 mirror set and redraws — showing cause and effect.
+ * the phase-2 mirror set and redraws, showing cause and effect.
  */
 export interface TutorialPhase {
   /** Loop-relative time at which this phase's beam starts drawing. */
@@ -46,7 +46,7 @@ export const TAP_RIPPLE_MS = 450;
 /** Demo boards render this much larger on md+ screens. */
 export const TUTORIAL_DESKTOP_CELL_SCALE = 1.25;
 
-/** The bespoke tap-to-place demo (no puzzle or laser — see MirrorCycleDemo). */
+/** The bespoke tap-to-place demo (no puzzle or laser, see MirrorCycleDemo). */
 export const MIRROR_CYCLE_SECTION = {
   title: "PLACE MIRRORS",
   caption:
@@ -103,7 +103,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
       ],
     },
     phases: [
-      // Straight beam hits the 5 before the 3 — wrong order, flashes red.
+      // Straight beam hits the 5 before the 3, wrong order, flashes red.
       { startMs: 0, drawMs: 700, mirrors: [] },
       // Rerouted around the wrong-order hit: 3 first, then 5.
       {
@@ -139,7 +139,7 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
         startMs: 0,
         drawMs: 3000,
         // Beam runs right along y=1, up the right edge, back left along the
-        // top, then down column x=1 — crossing its own y=1 path at (1,1) —
+        // top, then down column x=1, crossing its own y=1 path at (1,1) -
         // and finally up column x=0 through the source to the flag.
         mirrors: [
           { x: 2, y: 1, orientation: "/" },

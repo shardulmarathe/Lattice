@@ -40,7 +40,7 @@ interface BoardProps {
 
 // The largest a cell should ever grow on a spacious desktop viewport. Below
 // this we let cells shrink to whatever it takes to keep the whole board on
-// screen — fitting the viewport always wins over a fixed minimum cell size,
+// screen, fitting the viewport always wins over a fixed minimum cell size,
 // otherwise large grids overflow narrow phones.
 const MAX_CELL_SIZE = 72;
 
@@ -65,7 +65,7 @@ function computeCellSize(
   const widthBased = Math.floor(widthBudget / gridSize);
   const heightBased = Math.floor(heightBudget / gridSize);
 
-  // Never exceed the measured budget on either axis — that guarantees the
+  // Never exceed the measured budget on either axis, that guarantees the
   // board fits with no overflow/clipping. Clamp to a sane minimum only to
   // avoid a zero-size board before measurement lands.
   return Math.max(12, Math.min(MAX_CELL_SIZE, widthBased, heightBased));
@@ -116,7 +116,7 @@ export default function Board({
   const handleCellClick = (cell: BoardCell, x: number, y: number) => {
     if (disabled) return;
     // Empty/mirrors: place/cycle. Number/flag: forward so GameScreen can warn
-    // (illegal placement — display only, not a mistake).
+    // (illegal placement, display only, not a mistake).
     if (
       cell.type === "empty" ||
       cell.type === "mirror" ||

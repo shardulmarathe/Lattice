@@ -1,7 +1,7 @@
 /**
  * Shared store for canonical puzzle solutions (exact-min solver witnesses).
  *
- * src/data/puzzleSolutions.json maps puzzle id → MirrorPlacement[] — a
+ * src/data/puzzleSolutions.json maps puzzle id → MirrorPlacement[], a
  * proven-minimal, engine-verified mirror set. It is bundled into the client
  * (same pattern as src/data/puzzleStats.json) and powers the in-game HINT
  * button. All writers go through mergeSolution so the semantics live in one

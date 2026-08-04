@@ -79,14 +79,14 @@ export default function GameScreen() {
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
   const wantsReplay = searchParams.get("replay") === "1";
   // A tab left open overnight has yesterday's puzzle frozen in the memo above.
-  // Deliberately not `atMidnight` — a solve running at 23:59 is never yanked;
+  // Deliberately not `atMidnight`, a solve running at 23:59 is never yanked;
   // the swap waits until the player leaves the tab and comes back.
   useDailyRollover({
     enabled: searchParams.get("puzzle") === null,
     destination: "/play",
   });
   // Replaying a puzzle that already has a canonical solve runs as a practice
-  // session — it never overwrites the recorded time.
+  // session, it never overwrites the recorded time.
   const [mode] = useState<GameMode>(() =>
     wantsReplay && isPuzzleComplete(puzzle) ? "practice" : "record"
   );
@@ -98,7 +98,7 @@ export default function GameScreen() {
   // this id can't load a stale completion (see gameStorage.loadGameState).
   const signature = useMemo(() => puzzleSignature(puzzle), [puzzle]);
 
-  // Where to send the player on completion — preserve ?puzzle=N for archives,
+  // Where to send the player on completion, preserve ?puzzle=N for archives,
   // and tag practice runs so the completion screen shows only Replay.
   const completeRoute = useMemo(() => {
     const dailyId = getPuzzleForDate(new Date())?.id;
@@ -121,7 +121,7 @@ export default function GameScreen() {
     x: number;
     y: number;
   } | null>(null);
-  // Tap-on-number feedback only — does not affect the mistakes counter.
+  // Tap-on-number feedback only, does not affect the mistakes counter.
   const [placementWarning, setPlacementWarning] = useState<string | null>(null);
   const placementWarningTimerRef = useRef<number | null>(null);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
@@ -223,7 +223,7 @@ export default function GameScreen() {
     setCompletionSeconds(seconds);
     markTutorialSeen();
 
-    // Practice solves persist only to the throwaway practice slot — the
+    // Practice solves persist only to the throwaway practice slot, the
     // canonical record (and its shareable time) is never touched.
     saveGameState(
       {
@@ -284,7 +284,7 @@ export default function GameScreen() {
   // Passive mistake tracking: wrong number tiles + premature flag hits.
   // Counts every time a wrong number newly appears on the path (including the
   // same tile again after you fix and re-hit it) and every time the path newly
-  // reaches the flag early. Never decrements — only reset on clear-board / a
+  // reaches the flag early. Never decrements, only reset on clear-board / a
   // fresh (replay) session. Seeded on first run so a mid-solve reload doesn't
   // recount mistakes already persisted.
   const prevIncorrectKeysRef = useRef<Set<string>>(new Set());
@@ -306,7 +306,7 @@ export default function GameScreen() {
 
     let newlyWrong = 0;
     for (const key of incorrectKeys) {
-      // Count each transition into "this cell is wrong on the path" — leaving
+      // Count each transition into "this cell is wrong on the path", leaving
       // and re-entering (same cell hit again) counts as another mistake.
       if (!prevIncorrectKeysRef.current.has(key)) {
         newlyWrong += 1;

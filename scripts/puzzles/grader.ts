@@ -43,7 +43,7 @@ export interface GradeResult {
 
 const ORIENTATIONS = ["/", "\\"] as const;
 
-/** Every empty cell — the only legal mirror positions. */
+/** Every empty cell, the only legal mirror positions. */
 export function emptyCells(puzzle: Puzzle): Position[] {
   const board = buildBoard(puzzle, []);
   const cells: Position[] = [];

@@ -1,7 +1,7 @@
 /**
  * Generation profile: every daily puzzle is "extra hard".
  *
- * Difficulty is driven by MIRROR DENSITY — the intended solution uses ~1/3 of the
+ * Difficulty is driven by MIRROR DENSITY, the intended solution uses ~1/3 of the
  * grid as mirrors (anchor: a 5×5 wants ~8 mirrors). Grid size and code length are
  * randomized per day. The objective min-mirror solver (grader.ts) stays as an
  * anti-triviality floor: it proves no cheap shortcut exists up to an affordable cap.
@@ -26,7 +26,7 @@ export const SOLVER_CAP_MAX = 8;
 
 /**
  * Difficulty floor: reject any generated daily whose PROVEN exact minimum mirror
- * count is below this. This is the real difficulty signal — constructed mirror
+ * count is below this. This is the real difficulty signal, constructed mirror
  * density is decorative, because the player only has to route to the numbers +
  * flag in order, and a dense construction almost always hides a far cheaper true
  * solution (the naive anti-triviality grader can only rule out shortcuts up to a
@@ -35,7 +35,7 @@ export const SOLVER_CAP_MAX = 8;
  * many mirrors, so generation self-selects large, genuinely-hard boards. Matches
  * the harder curated puzzles (#16 = 12, #22 = 12).
  *
- * This is now an ANTI-TRIVIALITY floor, not the primary difficulty signal — craft is
+ * This is now an ANTI-TRIVIALITY floor, not the primary difficulty signal, craft is
  * (see CRAFT_REUSE_WEIGHT / minCraft). Deliberately LOWER than the count-era value of
  * 12: mirror reuse does double duty and thus *lowers* the mirror count, so a floor of
  * 12 rejected exactly the craftiest boards. Difficulty comes from the non-obvious
@@ -49,7 +49,7 @@ export const MIN_EXACT_MIRRORS = 9;
  * candidates clear the difficulty floor, then ship the one with the highest PROVEN
  * exact minimum (ties prefer a proven witness for day-one HINT support). Turns the
  * gate from "first board hard enough" into "hardest of several", so a raised floor
- * isn't needed to lift the typical difficulty — and well-placed obstacles finally
+ * isn't needed to lift the typical difficulty, and well-placed obstacles finally
  * translate end-to-end into harder shipped puzzles. Cost scales roughly linearly
  * with N (each passing candidate pays a full exact-min solve); 1 restores the old
  * first-past-the-floor behavior.
@@ -57,23 +57,23 @@ export const MIN_EXACT_MIRRORS = 9;
 export const BEST_OF_N = 6;
 
 /**
- * Craft — the REAL difficulty signal, measured on the MINIMAL (player-facing)
+ * Craft, the REAL difficulty signal, measured on the MINIMAL (player-facing)
  * solution rather than on the constructed scaffold. Mirror count alone is a poor
  * proxy: a 14-mirror serpentine sweep is tedious, not hard. Difficulty comes from a
- * non-obvious path — the beam crossing itself, and a single mirror doing double duty
+ * non-obvious path, the beam crossing itself, and a single mirror doing double duty
  * (struck from two directions, so its one placement must serve two beam segments at
  * once). We score both and (a) reject solutions below a floor and (b) make best-of-N
  * ship the CRAFTIEST candidate, not merely the one with the most mirrors.
  *
  * craft = reuse·CRAFT_REUSE_WEIGHT + crossings, where `reuse` = mirrors the beam
  * strikes from ≥2 distinct directions and `crossings` = empty cells the beam passes
- * through ≥2 times. Reuse is weighted higher — it's the harder constraint to see.
+ * through ≥2 times. Reuse is weighted higher, it's the harder constraint to see.
  */
 export const CRAFT_REUSE_WEIGHT = 2;
 
 /**
  * Soft craft floor on the minimal solution, scaled by grid size (bigger boards can
- * sustain more craft). Kept low so yield stays healthy — best-of-N ranking, not this
+ * sustain more craft). Kept low so yield stays healthy, best-of-N ranking, not this
  * floor, is what lifts the typical craft. Only proven candidates (with a witness to
  * measure) are craft-gated; rare node-capped fallbacks skip it and rank last.
  */
@@ -82,7 +82,7 @@ export function minCraft(gridSize: number): number {
 }
 
 /**
- * Rigidity — how forced the solve is. A board with ONE minimal solution makes every
+ * Rigidity, how forced the solve is. A board with ONE minimal solution makes every
  * mirror placement mandatory (brutal); one with many is forgiving, because the player
  * only has to stumble on any of them. We count minimal solutions up to this cap (all
  * that "few vs many" ranking needs) and fold "cap − count" into the difficulty score,
@@ -98,7 +98,7 @@ export const RIGIDITY_WEIGHT = 1;
  * spatial layout runs COUNTER to the source→flag flow, the beam has to weave back on
  * itself to hit them in sequence rather than trace a clean sweep. We count how many
  * number pairs are spatially out of collection order and add a small per-inversion
- * bonus to the difficulty score — a tiebreaker that favors weaving layouts.
+ * bonus to the difficulty score, a tiebreaker that favors weaving layouts.
  */
 export const INVERSION_WEIGHT = 0.5;
 /** Deterministic node cap for the solution enumeration (proving uniqueness is the costly case). */
@@ -162,7 +162,7 @@ export function rollParams(
     Math.max(0, area - targetMirrors - CODE_MIN - 3)
   );
 
-  // Code length is deliberately NOT a difficulty lever and NOT tied to grid size —
+  // Code length is deliberately NOT a difficulty lever and NOT tied to grid size -
   // difficulty comes from path craft, not from more digits to route. Keep it a short,
   // grid-independent band (4–6), capped only by the number slots the board can host.
   // Fewer, order-constrained numbers on a big grid is fine and often harder to route.

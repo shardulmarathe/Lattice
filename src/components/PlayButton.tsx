@@ -36,7 +36,7 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - clamped) ** 3;
 }
 
-/** Total frontend lap duration — independent of how fast the backend resolves. */
+/** Total frontend lap duration, independent of how fast the backend resolves. */
 function getLapDuration(loadCompleteTime: number): number {
   return Math.max(MIN_FULL_LAP_MS, loadCompleteTime) * LAP_VISUAL_SLOWDOWN;
 }

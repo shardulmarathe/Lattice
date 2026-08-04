@@ -8,7 +8,7 @@ interface TapRippleProps {
 
 /**
  * Expanding white ring marking a simulated tap on a board cell. Runs its CSS
- * animation once on mount — remount with a fresh key to replay it.
+ * animation once on mount, remount with a fresh key to replay it.
  */
 export default function TapRipple({ cellSize, cellX, cellY }: TapRippleProps) {
   const ringSize = cellSize * 0.6;

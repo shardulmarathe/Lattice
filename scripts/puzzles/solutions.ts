@@ -5,7 +5,7 @@
  * src/data/puzzleStats.json, but the witness (the actual mirror list) was
  * historically discarded. This script re-derives it by solving each puzzle AT
  * exactly its known minimum budget (startBudget = maxBudget = minMirrors), so
- * only the witness-finding level runs — no re-proving of the empty levels.
+ * only the witness-finding level runs, no re-proving of the empty levels.
  *
  * Never-clobber: ids that already hold a witness of length ≤ minMirrors are
  * skipped. Writes incrementally after each puzzle so an interrupted run keeps

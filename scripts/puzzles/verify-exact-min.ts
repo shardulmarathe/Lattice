@@ -3,7 +3,7 @@
  *
  * Re-solves every puzzle with a solver-proven `minMirrors` in puzzleStats.json
  * FROM SCRATCH (startBudget 1) and asserts the solver reproduces the exact
- * stored value. Any divergence — smaller, larger, or unsolved — fails loudly.
+ * stored value. Any divergence, smaller, larger, or unsolved, fails loudly.
  * Witnesses are additionally validated against the real game engine inside
  * solveExactMin itself.
  *

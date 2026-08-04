@@ -1,5 +1,5 @@
 /**
- * Exact min-mirror solver — beam-guided iterative-deepening branch & bound.
+ * Exact min-mirror solver, beam-guided iterative-deepening branch & bound.
  *
  * The cheap grader (grader.ts) chooses k-of-N empty cells and blows past its
  * combinatorial budget at k≈4 on big grids, so it can only prove weak lower
@@ -20,7 +20,7 @@
  *
  * PERFORMANCE (rewritten for speed; search semantics unchanged):
  *   - The board, cell decisions, and beam walk use flat typed arrays and integer
- *     cell indices — no per-node board rebuild, string keys, or allocations.
+ *     cell indices, no per-node board rebuild, string keys, or allocations.
  *   - Each node resumes the beam from its parent's branch cell instead of
  *     re-tracing from the source: the prefix (position, direction, code index,
  *     step count at the branch cell) is saved on the recursion stack, and only
@@ -30,7 +30,7 @@
  *     path can no longer change and the remaining straight-commit chain is
  *     provably dead. (This collapses the long unary tails of the search tree.)
  *
- * ACCURACY: identical proof semantics to the original solver — same branch
+ * ACCURACY: identical proof semantics to the original solver, same branch
  * order, same locked-prefix pruning, same completion rule (collected sequence
  * exactly equals the code AND the flag is reached). As a belt-and-braces check,
  * every witnessing solution is re-validated with the real game engine
@@ -111,7 +111,7 @@ const W_BRANCH = 2; // undecided empty cell found; branch state saved
 export interface SolutionCount {
   /** Distinct minimal solutions found, capped at `cap`. */
   count: number;
-  /** True when the count hit `cap` (there may be more) — i.e. NOT rigid. */
+  /** True when the count hit `cap` (there may be more), i.e. NOT rigid. */
   capped: boolean;
   /** True when a node cap stopped the enumeration before it was exhaustive. */
   aborted: boolean;
@@ -119,7 +119,7 @@ export interface SolutionCount {
 
 /**
  * Count DISTINCT solutions that use exactly `budget` mirrors, up to `cap`. Called
- * with budget = the proven exact minimum, it counts minimal solutions — the rigidity
+ * with budget = the proven exact minimum, it counts minimal solutions, the rigidity
  * signal. A board with one minimal solution forces every mirror placement (brutal);
  * one with many is forgiving. We stop at `cap` because "few vs many" is all that
  * matters for difficulty ranking, which keeps the cost bounded.
@@ -169,7 +169,7 @@ export function countMinSolutions(
   // Walk from the source, same solve semantics as solveExactMin (a solve is reported
   // the moment the beam collects the full code and hits the flag). `bBranch`/`bCell`
   // expose the first undecided empty cell so the caller can, at a solved node, explore
-  // only the MIRROR alternatives at it — the straight alternative is the very solution
+  // only the MIRROR alternatives at it, the straight alternative is the very solution
   // just counted, so skipping it avoids double-counting while missing none.
   const walk = (): number => {
     let x = startX;
@@ -321,7 +321,7 @@ export function solveExactMin(
    *   - the first undecided empty cell is recorded as the branch point;
    *   - a path that collects exactly the code then reaches the flag is a solve
    *     (checked on the full path, exactly like the original's isComplete-first
-   *     ordering — even when an undecided cell sits earlier on the path).
+   *     ordering, even when an undecided cell sits earlier on the path).
    */
   const walk = (
     x: number,
@@ -434,7 +434,7 @@ export function solveExactMin(
     if (outcome === W_DEAD) return false;
 
     // W_BRANCH. With no budget left, committing "straight" can never alter the
-    // beam, so the path is frozen and unsolved — the whole tail is dead.
+    // beam, so the path is frozen and unsolved, the whole tail is dead.
     if (mirrorCount >= budget) return false;
 
     // Save the branch state locally: recursion below overwrites the b* scalars.
@@ -493,7 +493,7 @@ export function solveExactMin(
     provenNoSolutionUpTo = budget;
   }
 
-  // Exhausted every budget up to maxBudget with no solution — a proven bound.
+  // Exhausted every budget up to maxBudget with no solution, a proven bound.
   return {
     minMirrorsAtLeast: maxBudget + 1,
     nodes,

@@ -3,13 +3,13 @@
  * solution first, then delete the mirrors.
  *
  * Because the engine is deterministic, any puzzle produced this way is provably
- * solvable with the generator's own mirror set — we then verify with the REAL
+ * solvable with the generator's own mirror set, we then verify with the REAL
  * engine + win check, enforce the hardness constraints, and grade with the
  * min-mirror solver.
  *
  * The solution is built as a self-avoiding laser walk (see buildWalk), placing a
  * mirror at each turn. Final solvability is always asserted against the real
- * engine (src/lib/laserEngine.ts) — never the construction scaffold.
+ * engine (src/lib/laserEngine.ts), never the construction scaffold.
  */
 
 import type {
@@ -52,18 +52,18 @@ export interface Craft {
 }
 
 export interface GeneratedPuzzle {
-  /** Puzzle without an id — the codegen step assigns ids. */
+  /** Puzzle without an id, the codegen step assigns ids. */
   puzzle: Omit<Puzzle, "id">;
   solution: MirrorPlacement[];
   params: GenParams;
   grade: GradeResult;
   /** Craft of the shipped MINIMAL solution (the player-facing difficulty signal). */
   craft: Craft;
-  /** Distinct minimal solutions (capped) — 1 is maximally rigid/forced. */
+  /** Distinct minimal solutions (capped), 1 is maximally rigid/forced. */
   solutions: number;
   /** Number pairs whose spatial order fights the source→flag flow (routing must weave). */
   inversions: number;
-  /** Proven exact min (or lower bound) from the difficulty gate — reused by the
+  /** Proven exact min (or lower bound) from the difficulty gate, reused by the
    * codegen step so the shipped daily records its minimum + HINT witness without
    * solving twice. */
   exact: ExactMinResult;
@@ -160,7 +160,7 @@ function stepDir(a: Position, b: Position): string {
  * The flag terminates the beam, so only the PREFIX up to the flag matters. Within
  * that prefix we take cells visited exactly once, that are pass-through cells (not
  * mirrors/source) and not on the free bare-laser ray. Crucially we bucket them by
- * STRAIGHT RUN (a new run starts at every turn) and keep at most one per run — so
+ * STRAIGHT RUN (a new run starts at every turn) and keep at most one per run, so
  * no single straight beam segment ever collects two code digits in a row. We keep
  * the flag whose prefix yields the most distinct runs (i.e. number slots).
  */
@@ -270,7 +270,7 @@ interface Walk {
  * How strongly turning into `dir` from (x, y) steers the beam toward the raw material
  * of craft: scan ahead until the first already-decided cell or a wall. A mirror hit
  * (reuse) scores highest, a visited straight-through cell (crossing) next, fresh
- * territory lowest — all attenuated by distance.
+ * territory lowest, all attenuated by distance.
  */
 function steerWeight(
   x: number,
@@ -298,10 +298,10 @@ function steerWeight(
  * Build the solution as a SELF-CROSSING laser walk from the source, on a fixed
  * (consistent) board so the real engine reproduces it exactly.
  *
- * At each fresh cell we decide once — go straight or turn 90° (a mirror) — and
+ * At each fresh cell we decide once, go straight or turn 90° (a mirror), and
  * that decision is permanent. On revisits the cell's decision is FORCED: an empty
  * cell passes the beam straight (streams cross), a mirror cell turns it again
- * (the same mirror does double duty — mirror reuse). Near a wall, going straight
+ * (the same mirror does double duty, mirror reuse). Near a wall, going straight
  * would exit, so the beam is forced to turn, wrapping it back across its own path.
  * This yields the crisscrossing, mirror-reusing solutions of the hard hand-made
  * puzzles rather than a single readable sweep.
@@ -371,7 +371,7 @@ function buildWalk(
         if (chosen.turn) mirrorCount++;
         curDir = chosen.dir;
       } else if (decision !== "S") {
-        curDir = reflect(dir, decision); // forced turn — mirror reuse
+        curDir = reflect(dir, decision); // forced turn, mirror reuse
       }
     }
 
@@ -412,8 +412,8 @@ function weightedSample<T>(
 
 /**
  * Craft of a solution as the player experiences it: replay the beam with `solution`
- * and count (a) mirrors struck from ≥2 distinct directions — a single placement doing
- * double duty, the hardest thing to see — and (b) empty cells the beam self-crosses.
+ * and count (a) mirrors struck from ≥2 distinct directions, a single placement doing
+ * double duty, the hardest thing to see, and (b) empty cells the beam self-crosses.
  * A high score means the routing is interdependent and non-obvious; a flat sweep
  * scores ~0. Measured on the MINIMAL solution, not the dense construction scaffold.
  */
@@ -496,7 +496,7 @@ function attempt(
   // the intended path.
   const walk = buildWalk(rng, params, source, new Set());
   // The true minimum can only be ≤ the constructed length, so a construction below
-  // the difficulty floor can never pass the exact-min gate — reject it here before
+  // the difficulty floor can never pass the exact-min gate, reject it here before
   // paying for flag/number selection or the solver. (This is also what makes small
   // grids self-reject: they can't build MIN_EXACT_MIRRORS mirrors.)
   if (walk.mirrors.size < Math.max(minMirrorCount, MIN_EXACT_MIRRORS)) return null;
@@ -576,7 +576,7 @@ function attempt(
   const solved = calculateLaserPath(full, solution);
   if (!validateSequence(code, solved).isComplete) return null; // constructed solution didn't validate
 
-  // (2) The bare laser (no mirrors) must not collect any code number — every
+  // (2) The bare laser (no mirrors) must not collect any code number, every
   // digit has to be earned by routing, never handed to the player for free.
   if (calculateLaserPath(full, []).collectedNumbers.length > 0) return null; // a digit is collected for free
 
@@ -596,7 +596,7 @@ function attempt(
 
   // (3) Anti-triviality (cheap pre-filter): reject if a solution CHEAPER than the
   // intended dense one exists within the naive solver's affordable cap. On large
-  // grids this cap is tiny (~3), so it only catches the most trivial shortcuts —
+  // grids this cap is tiny (~3), so it only catches the most trivial shortcuts -
   // the real difficulty gate is (4) below.
   const g = grade(full, {
     fallbackSolution: solution,
@@ -605,7 +605,7 @@ function attempt(
   if (g.solvableWithinCap) return null; // a cheaper shortcut exists → too easy
 
   // (4) Difficulty gate: the exact minimum must be PROVEN (a witness exists) and meet
-  // the floor. We require a proven witness — not just a node-capped lower bound —
+  // the floor. We require a proven witness, not just a node-capped lower bound -
   // because craft (gate 5) can only be measured on the minimal solution the player
   // actually finds. A node-capped board is genuinely hard but craft-unmeasurable, so
   // we drop it and let generation fall back to a size whose minimum we can prove
@@ -627,7 +627,7 @@ function attempt(
 
   // (6) Rigidity: count minimal solutions (capped). Fewer = every mirror more forced.
   // Folded into the difficulty ranking (not gated) so it never causes a generation
-  // failure — it just makes best-of-N prefer the more rigid of otherwise-similar boards.
+  // failure, it just makes best-of-N prefer the more rigid of otherwise-similar boards.
   // An aborted enumeration (unknown) is treated as the cap (least rigid), so we never
   // over-credit a board we couldn't verify.
   const counted = countMinSolutions(full, exact.minMirrors!, SOLUTION_COUNT_CAP, COUNT_MIN_OPTIONS.nodeCap);
@@ -702,7 +702,7 @@ function harderFirst(a: GeneratedPuzzle, b: GeneratedPuzzle): number {
  *
  * Best-of-N: within the first size that yields any valid board, keep going until
  * BEST_OF_N candidates clear the floor (or the attempt budget runs out), then ship
- * the hardest by proven exact min — not merely the first one over the floor.
+ * the hardest by proven exact min, not merely the first one over the floor.
  */
 export function generatePuzzle(
   dateKey: string,

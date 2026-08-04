@@ -7,9 +7,9 @@ export interface SavedGameState {
   /**
    * Signature of the puzzle content this save belongs to. Guards against a save
    * from an OLD puzzle loading for a NEW puzzle that reused the same id (dailies
-   * are regenerated in place) — a stale completion would otherwise lock the
+   * are regenerated in place), a stale completion would otherwise lock the
    * player out of the new puzzle. Optional so pre-signature saves still load
-   * (validated by content coherence instead — see loadGameState).
+   * (validated by content coherence instead, see loadGameState).
    */
   signature?: string;
   mirrors: MirrorPlacement[];
@@ -20,10 +20,10 @@ export interface SavedGameState {
   isPaused: boolean;
   /**
    * Mistakes this session: wrong-number collections + premature flag hits.
-   * Counting only — no effect on win/time.
+   * Counting only, no effect on win/time.
    */
   wrongNumberHits: number;
-  /** HINT button presses this session. Counting only — no penalty. */
+  /** HINT button presses this session. Counting only, no penalty. */
   hintsUsed: number;
 }
 

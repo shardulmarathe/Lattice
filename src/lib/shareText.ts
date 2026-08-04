@@ -52,7 +52,7 @@ function pluralize(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-// Clipboard share text is plain text, which can't carry real formatting — so
+// Clipboard share text is plain text, which can't carry real formatting, so
 // emphasized figures (the speed label, the efficiency percentage) are mapped to
 // Unicode sans-serif bold code points (𝗙𝗮𝘀𝘁, 𝟴𝟲%), which render bold when
 // pasted into most chat and social apps.
@@ -96,7 +96,7 @@ function meterLine(label: string, score: MeterScore, detail: string): string {
   return `${label.padEnd(METER_LABEL_WIDTH)}  ${meterDots(score)}   ${detail}`;
 }
 
-/** Share time as m:ss (no leading zero on minutes — "3:18", not "03:18"). */
+/** Share time as m:ss (no leading zero on minutes, "3:18", not "03:18"). */
 export function formatShareTime(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
@@ -133,7 +133,7 @@ export function getAccuracyDetail(wrongNumberHits: number): string {
  *   https://playlattice.vercel.app
  *
  * Hinted solves disclose it on the header line ("Lattice #017 · 9×9 · 2
- * hints") — a hinted board can score Optimal efficiency, so the qualifier
+ * hints"), a hinted board can score Optimal efficiency, so the qualifier
  * belongs on the whole card. Zero hints leaves the share byte-identical to
  * the unhinted format.
  */

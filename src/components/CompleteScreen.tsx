@@ -106,7 +106,7 @@ export default function CompleteScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
-  // A practice run's completion: same victory screen, but Replay-only — the
+  // A practice run's completion: same victory screen, but Replay-only, the
   // recorded time (read from the record slot) is untouched and not re-shared.
   const isPractice = searchParams.get("practice") === "1";
   // Nothing is at stake on this screen, so when the countdown below reaches
@@ -117,7 +117,7 @@ export default function CompleteScreen() {
     destination: "/play",
   });
 
-  // The daily is a one-time solve — no replay. Only past puzzles can be replayed.
+  // The daily is a one-time solve, no replay. Only past puzzles can be replayed.
   const isDaily = useMemo(
     () => puzzle.id === getPuzzleForDate(new Date())?.id,
     [puzzle.id]

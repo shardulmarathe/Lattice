@@ -15,7 +15,7 @@ function cellKey(x: number, y: number): string {
 }
 
 /**
- * A small, self-contained SVG snapshot of a puzzle's static board — source,
+ * A small, self-contained SVG snapshot of a puzzle's static board, source,
  * flag, obstacles and number tiles. No laser, mirrors or interaction. Used by
  * the Past Games archive cards. Deliberately not the heavy interactive Board.
  */

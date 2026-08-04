@@ -1,6 +1,6 @@
 import type { Puzzle } from "@/lib/puzzleTypes";
 
-/** Scrapped — not registered or scheduled. */
+/** Scrapped, not registered or scheduled. */
 export const PUZZLE_021: Puzzle = {
   id: 21,
   code: "415",

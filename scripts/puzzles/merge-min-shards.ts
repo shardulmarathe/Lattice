@@ -6,8 +6,8 @@
  * and content/min-progress.json with NEVER-DOWNGRADE semantics, then deletes
  * the shard files:
  *   - a proven exact `minMirrors` always beats a lower bound;
- *   - conflicting exact values (should never happen) keep the smaller one — a
- *     smaller witness-verified solution is the stronger fact — with a loud
+ *   - conflicting exact values (should never happen) keep the smaller one, a
+ *     smaller witness-verified solution is the stronger fact, with a loud
  *     warning;
  *   - lower bounds keep the maximum seen.
  *

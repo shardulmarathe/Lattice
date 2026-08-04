@@ -12,7 +12,7 @@ interface UseTimerOptions {
 
 /**
  * Whether the tab is currently on screen. Backgrounding it isn't playing, and
- * browsers throttle a hidden tab's intervals to roughly once a minute anyway —
+ * browsers throttle a hidden tab's intervals to roughly once a minute anyway -
  * so the clock would drift regardless. Stopping is both fairer and accurate.
  */
 function useIsDocumentVisible(): boolean {
@@ -37,7 +37,7 @@ export function useTimer({
   const [seconds, setSeconds] = useState(initialSeconds);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initializedRef = useRef(false);
-  // Silent, unlike the PAUSE button — no overlay, and it resumes on its own when
+  // Silent, unlike the PAUSE button, no overlay, and it resumes on its own when
   // the player comes back. This is clock accuracy, not a gate on play.
   const isVisible = useIsDocumentVisible();
 

@@ -11,7 +11,7 @@ export function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }
-  // Use canonical domain on production — preview URLs require Vercel auth
+  // Use canonical domain on production, preview URLs require Vercel auth
   // and break Open Graph image fetching for social crawlers.
   if (process.env.VERCEL_ENV === "production") {
     return productionSiteUrl;

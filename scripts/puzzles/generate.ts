@@ -4,7 +4,7 @@
  * Tops up a rolling buffer of scheduled daily puzzles: for every date from today
  * through the horizon that has no scheduled puzzle, generate one (difficulty by
  * weekly cadence), verify it with the real engine, grade it, and codegen the
- * draft + index + schedule files. Idempotent — if the buffer is already covered,
+ * draft + index + schedule files. Idempotent, if the buffer is already covered,
  * it writes nothing.
  *
  * Usage:
@@ -37,7 +37,7 @@ import {
 /**
  * Runtime min-mirror stats the app reads (efficiency %, speed pacing). Generation
  * PROVES each puzzle's exact minimum as its difficulty gate, so we record it here
- * immediately — the daily is fully paced the moment it's created, and the nightly
+ * immediately, the daily is fully paced the moment it's created, and the nightly
  * solver skips it (its progress bootstraps from this) instead of re-proving it.
  */
 const STATS_FILE = join(REPO_ROOT, "src", "data", "puzzleStats.json");
@@ -146,7 +146,7 @@ function main(): void {
 
     if (!args.dryRun) {
       // The difficulty gate already proved this puzzle's exact minimum (or a
-      // ≥-floor lower bound) during generation — reuse it rather than solving
+      // ≥-floor lower bound) during generation, reuse it rather than solving
       // again. Records an exact minimum when proven, else a lower bound.
       const exact = generated.exact;
       console.log(

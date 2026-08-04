@@ -28,12 +28,12 @@ function firstVisitIndex(visitedCells: Position[]): Map<string, number> {
 /**
  * One step from the player's board toward the canonical solution, or null when
  * the board already matches it exactly. Priority:
- *   1. fix    — a player mirror on a solution cell with the wrong orientation
+ *   1. fix, a player mirror on a solution cell with the wrong orientation
  *               (in solution-beam order);
- *   2. place  — the first missing solution mirror, ordered by when the solved
+ *   2. place, the first missing solution mirror, ordered by when the solved
  *               beam first reaches its cell (every minimal-witness mirror lies
  *               on the solved path by construction);
- *   3. remove — an extra player mirror not in the solution, preferring ones on
+ *   3. remove, an extra player mirror not in the solution, preferring ones on
  *               the player's current beam path.
  * Each step reduces (wrong + missing + extra) by exactly one, so repeated
  * hints always converge to the solved board.

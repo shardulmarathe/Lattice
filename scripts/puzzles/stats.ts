@@ -1,7 +1,7 @@
 /**
  * App-readable min-mirror stats.
  *
- * Builds src/data/puzzleStats.json — a map of puzzle id → known min-mirror data
+ * Builds src/data/puzzleStats.json, a map of puzzle id → known min-mirror data
  * the app uses for share efficiency.
  *
  *   npm run puzzles:stats
@@ -12,7 +12,7 @@
  *
  *   npm run puzzles:stats -- --exact [--ids=16,17] [--force] [--budget=N] [--node-cap=N] [--minutes=N]
  *       Runs the beam-guided exact-min solver (exactMin.ts) to UPGRADE lower
- *       bounds to exact minimums where it can. Slow — target ids while backfilling.
+ *       bounds to exact minimums where it can. Slow, target ids while backfilling.
  *       --force recomputes ids that already have an exact value.
  *       --minutes=N caps the solve time PER targeted id (each gets its own
  *       wall-clock slice, so one hard puzzle can't starve the rest); total run
@@ -164,7 +164,7 @@ for (const puzzle of PUZZLES) {
       }
     } else {
       // A time/node-limited run can return a weaker bound than one already
-      // recorded — never let it lower the best-known lower bound.
+      // recorded, never let it lower the best-known lower bound.
       const bound = Math.max(
         res.minMirrorsAtLeast ?? 0,
         stat.minMirrorsAtLeast ?? 0,

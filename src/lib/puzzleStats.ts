@@ -45,7 +45,7 @@ const FASTEST_SECONDS_PER_MIRROR = 1.0;
 const GOOD_MULTIPLIER = 2.5;
 
 /**
- * Fastest achievable solve time (seconds) — the record floor a puzzle is paced
+ * Fastest achievable solve time (seconds), the record floor a puzzle is paced
  * against. Uses the exact minimum when known, else the proven lower bound, else
  * grid size as a last-resort proxy.
  */
@@ -66,7 +66,7 @@ export function getGoodSeconds(puzzle: Puzzle): number {
 }
 
 // ---------------------------------------------------------------------------
-// 1–5 meter scores — the shared scorecard basis for the completion screen and
+// 1–5 meter scores, the shared scorecard basis for the completion screen and
 // the share text (Efficiency / Speed / Accuracy, five dots each).
 // ---------------------------------------------------------------------------
 
