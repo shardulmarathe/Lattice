@@ -44,6 +44,16 @@ const REVERB_RETURN = 0.5;
 // texture reads as undifferentiated mush instead of a laser.
 const REVERB_SECONDS = 0.55;
 const REVERB_DECAY = 5.5;
+/**
+ * How much of the continuous voices' hum goes to the reverb: the "aura" around
+ * the blade. Small, because a sustained voice in a reverb is a wash rather than
+ * a tail, and the chorus inside `buildHum` is already doing most of this job.
+ *
+ * Tapped off the bed bus rather than added per-voice, which is what makes it
+ * duck: a per-voice send sits upstream of the bed gain, so a hidden tab would
+ * keep ringing at full level with the voice itself silenced.
+ */
+const BED_VERB_SEND = 0.12;
 const NEAR_ZERO = 0.0001;
 
 const ONE_SHOTS = {
@@ -124,8 +134,9 @@ function ensure(): Buses | null {
   bedBus.connect(masterGain);
 
   // Parallel reverb send. The impulse is generated, not shipped, so the aura
-  // costs no bytes. One-shots only: a continuous voice fed in here would smear
-  // into a permanent wash.
+  // costs no bytes. One-shots send into it individually, at the per-voice
+  // levels in SEND; the continuous voices get one small shared tap off the bed
+  // instead, so their aura ducks with them.
   const verbBus = ctx.createGain();
   verbBus.gain.value = 1;
   const convolver = ctx.createConvolver();
@@ -133,6 +144,10 @@ function ensure(): Buses | null {
   const verbReturn = ctx.createGain();
   verbReturn.gain.value = REVERB_RETURN;
   verbBus.connect(convolver).connect(verbReturn).connect(masterGain);
+
+  const bedSend = ctx.createGain();
+  bedSend.gain.value = BED_VERB_SEND;
+  bedBus.connect(bedSend).connect(verbBus);
 
   master = masterGain;
   buses = { ctx, fx, bed: bedBus, verb: verbBus };

@@ -133,13 +133,20 @@ The palette lives in `src/lib/audio/voices.ts`. All levels sit in `MIX` and all
 durations in `SHAPE`; tuning the mix means editing those two objects, never the
 voice bodies.
 
-A laser is four layers, not one: a transient crack, a resonant descending body,
-**sizzle**, and a tail. The sizzle is the layer that decides whether the palette
-reads as a laser or as an arcade bleep, and the thing to understand about it is
-that **sizzle is noise modulating something, not noise by itself**. Static
-bandpassed noise sounds like "shhh"; noise driven into a filter's cutoff sounds
-like frying. Two earlier passes failed precisely here, one landing on an arcade
-"pew" and one on a lightsaber.
+There are two voice families and they are built on opposite principles. Discrete
+events are an **electrical arc**; anything held is a **hum**. Do not reach for
+the arc primitive when adding a sustained voice, or the hum primitive when
+adding a one-shot.
+
+### One-shots: the arc
+
+A laser event is four layers, not one: a transient crack, a resonant descending
+body, **sizzle**, and a tail. The sizzle is the layer that decides whether the
+palette reads as a laser or as an arcade bleep, and the thing to understand
+about it is that **sizzle is noise modulating something, not noise by itself**.
+Static bandpassed noise sounds like "shhh"; noise driven into a filter's cutoff
+sounds like frying. Two earlier passes failed precisely here, one landing on an
+arcade "pew".
 
 `sizzle()` therefore modulates four destinations at once, following how arc and
 electricity effects are actually built: a white-noise source and a
@@ -158,6 +165,33 @@ Two hazards live in that primitive, both of which have bitten:
 - **The generated buffers are `Math.random()`.** That is fine in the app but
   means any measurement of a click or sizzle voice must seed the generator
   first, or the numbers are noise (see below).
+
+### Continuous voices: the hum
+
+The cursor tone and the in-game beam were originally built on the arc rig too,
+and that was wrong. A texture that is exciting for 300ms is punishing for 300
+seconds, and the arc rig has two properties that make a held version of it
+actively unpleasant: its energy sits at 2-9 kHz, and a sample-and-hold chops its
+amplitude at engine speeds. Players reported the first as "scratchy" and the
+second, sitting under a 52 Hz resonant sweep, as a lawnmower. Measured, the old
+beam had **50 to 88 percent of its energy above 4 kHz**.
+
+So `buildHum` contains no noise at all. It is a small harmonic stack
+(fundamental, octave, fifth), each partial doubled and detuned with the copies
+panned apart so the beating between them supplies the aura, plus two sine
+vibratos and two sine amplitude LFOs at deliberately incommensurate rates, under
+a gentle lowpass. `HUM` is its tuning surface, in the same spirit as `MIX` and
+`SHAPE`, and it is read at build time, so a running voice must be torn down and
+rebuilt to pick up a change.
+
+Two rules here:
+
+- **Rates must not be commensurate.** One vibrato reads as a synth patch with an
+  effect on it within about two seconds; two that never line up read as alive.
+- **`breatheBase` minus the summed `breathe` depths must stay above zero.** The
+  LFOs sum onto that gain stage's intrinsic value. Drive it through zero and
+  `|gain|` folds the waveform back on itself, so the voice distorts rather than
+  breathing. Current values leave 0.4 of headroom, which is not much.
 
 `src/lib/audio/engine.ts` is a module-level singleton, deliberately outside
 React. It has to be: the victory sting starts on the board in `/play` and
@@ -190,12 +224,19 @@ Load-bearing rules:
 
 The in-game background is not ambience, it is the beam. `createBeamVoice` is
 driven by the real laser state the game already computes, so it changes every
-time a mirror moves because the beam on screen actually changed:
-`segments.length` sets intensity and whine pitch, the bounce count (visited
-cells holding a mirror) sets crackle density, `terminatedBy` sets character —
-`"flag"` focused and bright, `"obstacle"`/`"boundary"` duller and rougher — and
-the mistake state sours it. `GameScreen` computes the bounce count from
-`laserResult.visitedCells` and `getMirrorAt`.
+time a mirror moves because the beam on screen actually changed. All four inputs
+map onto the hum:
+
+| Input | Effect |
+| --- | --- |
+| `segments.length` | pitch and presence. A longer path resonates lower, like a longer string. |
+| `terminatedBy` | brightness. `"flag"` is a beam under control and rings clear; `"obstacle"` and `"boundary"` are duller. |
+| bounce count | thickness, through the fifth's level and the stereo spread. Every fold adds a resonance to the chord. This axis used to be carried by spark density. |
+| mistake | the detuned copies pushed apart until they audibly beat, plus a faster vibrato, a pitch sag and a darker filter. |
+
+`GameScreen` computes the bounce count from `laserResult.visitedCells` and
+`getMirrorAt`. The mistake state is meant to be uncomfortable without being
+louder, so it must never be expressed as gain.
 
 Note that `LaserResult["terminatedBy"]` still declares `"revisit"`, which
 `calculateLaserPath` never actually emits; the beam maps it to `null`.
@@ -206,23 +247,44 @@ peak.
 
 ## Judging the mix without hearing it
 
-`scripts/` has no audio tooling. Levels and texture are verified by rendering
-each voice through an `OfflineAudioContext` in headless Chrome against the real
-bus graph, because none of this can be assessed by reading code:
+`npm run sound:measure` renders every voice through an `OfflineAudioContext` in
+headless Chrome against the real bus graph, and sweeps the beam's whole state
+space. An earlier version of this harness was written into a scratch directory
+and lost, which is why it is now committed at `scripts/audio/measure.mjs`.
+
+Flags: `--verify` re-runs everything in a fresh page to prove the numbers are
+reproducible, `--compare` diffs against `HEAD`, `--baseline` measures `HEAD`
+itself, `--json` dumps raw.
+
+What it reports, and why each is not readable from the source:
 
 - **Peak amplitude**, since `MIX` entries are *drive* levels and the resonant
   filters add 10-20 dB, so the numbers cannot be compared to each other by eye.
-- **Envelope irregularity** (coefficient of variation of a short-window RMS
-  envelope, plus a median-detrended variant), which is what distinguishes real
-  sizzle from static noise. Calibrate the pass line against measured static and
-  modulated references rather than picking a constant.
-- **Crackle rate**, discrete transients per sounding second.
-- **Beam reactivity**, rendering each `setState` axis and asserting the output
-  actually differs — this is how an unwired parameter gets caught.
+- **Spectral flatness**, which separates a harmonic stack (near 0) from noise
+  (near 1). This is the "scratchy" test.
+- **Energy above 4 kHz**, which is where scratch actually lives.
+- **`arcChop`**, the fraction of the high band's amplitude envelope modulated
+  between 25 and 200 Hz. This is the "lawnmower" test. It is reported as `-`
+  when there is no high band to chop, which is the strongest possible result.
+- **Slow modulation rate and depth**, which should be vibrato and breathing.
 
-**Seed `Math.random` before measuring.** Without it, click and sizzle voices
-measure differently every run; that produced a round of non-monotonic tuning
-where raising a voice's drive lowered its measured peak.
+Three traps, all of which produced confidently wrong numbers before being found:
+
+- **Seed `Math.random`, and rewind it before every render, not once per run.**
+  Without seeding, click and sizzle voices measure differently every run; that
+  produced a round of non-monotonic tuning where raising a voice's drive lowered
+  its measured peak. Without rewinding *per render*, sweep order leaks into the
+  results: removing randomness from the continuous voices shifted the stream and
+  moved an untouched `uiTick`'s peak by 65 percent.
+- **An envelope window shorter than the carrier's period measures the carrier.**
+  A 1.45ms RMS window reported a 92 Hz fundamental's own octave partial as "184
+  Hz of modulation" across every voice.
+- **Gate band-limited metrics on the FFT, never on a filter's output.** Filters
+  leak. Gating `arcChop` on highpass RMS let a fundamental 60 dB down dominate,
+  and every voice in the palette scored 0.96.
+
+Absolute pass bands are only meaningful for voices under active design. For
+everything else the useful question is "did I change it", which is `--compare`.
 
 ## Automation
 

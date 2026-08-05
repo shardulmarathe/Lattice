@@ -1,8 +1,12 @@
 /**
  * Every sound in Lattice is synthesized here, there are no audio assets.
  *
- * The palette is a real laser: an industrial emitter, not a blaster and not a
- * lightsaber. A laser event has four layers, in this order:
+ * There are two voice families, and they are deliberately different animals.
+ *
+ * --- ONE-SHOTS: an electrical arc ---
+ *
+ * Every discrete event - a mirror seated, a digit locked, the victory sting -
+ * is an industrial emitter striking. Four layers, in this order:
  *
  *   1. transient  - the contactor closing. `resonantClick`, a 4ms impulse rung
  *                   through high-Q bandpasses so the decay comes from the
@@ -13,8 +17,8 @@
  *   3. SIZZLE     - the frying, arcing high end. This is the layer that makes
  *                   the whole thing believable, and it is the one the first two
  *                   passes got wrong.
- *   4. tail       - the reverb send. Every voice ends there, which is what makes
- *                   a set of synthesized noises cohere into one palette.
+ *   4. tail       - the reverb send. Every one-shot ends there, which is what
+ *                   makes a set of synthesized noises cohere into one palette.
  *
  * The crux is layer 3. Sizzle is NOT filtered noise. Static bandpassed noise is
  * "shhh" and it is what made the earlier passes sound like escaping air. Sizzle
@@ -29,8 +33,31 @@
  * modulator, a buffer of held random values IS a sample & hold, and a buffer of
  * sparse impulses IS a crackle generator. No oscillators, no samples.
  *
- * The chosen flavour is an ELECTRICAL ARC: bright edge in roughly 2-9 kHz,
- * spitting and irregular, with sparse random pops rather than dense hiss.
+ * --- CONTINUOUS VOICES: a lightsaber hum ---
+ *
+ * The cursor tone and the in-game beam are the opposite, and they used to be
+ * built on the same arc rig as the one-shots. They cannot be. A texture that is
+ * exciting for 300ms is punishing for 300 seconds, and the arc rig has two
+ * properties that make it actively unpleasant when held: its energy lives at
+ * 2-9 kHz, and its amplitude is chopped by a sample & hold running at engine
+ * speeds. Players heard the first as "scratchy" and the second, sitting under
+ * a 52 Hz resonant sweep, as a lawnmower. Both readings were correct.
+ *
+ * So a held beam is a HUM, `buildHum`, and it contains no noise at all:
+ *
+ *   - a small harmonic stack, fundamental plus octave plus fifth, so it is a
+ *     chord rather than a tone. The fifth is what stops it reading as an organ.
+ *   - each partial doubled and detuned, the two copies panned apart. The
+ *     beating between them is the aura, and it costs nothing.
+ *   - two sine vibratos at incommensurate rates. One rate is a synth patch;
+ *     two that never line up is something alive.
+ *   - two sine amplitude LFOs, likewise incommensurate, so a hum held for a
+ *     five-minute solve never audibly loops.
+ *   - a GENTLE lowpass. Q is 1.2, not the 9 it was: filter resonance over a low
+ *     fundamental is most of what made the old voice a motor.
+ *
+ * Everything the board needs to say is said through those parameters rather
+ * than through noise - see `createBeamVoice` for the mapping.
  *
  * All levels live in MIX, all timings in SHAPE. Tuning the mix means editing
  * those two objects, not the voice bodies.
@@ -46,21 +73,16 @@
 export const MIX = {
   // The continuous voices sit far below the one-shots on purpose: sustained
   // tone reads much louder than a transient of the same peak, so matching them
-  // numerically would put the beam on top of the gameplay. The beam is also
-  // running its sizzle forever, and a permanent fry is fatiguing at any level
-  // that would be fine for 300ms.
-  cursor: 0.01247,
-  cursorSizzle: 0.0075,
-  /** The tonal core under the beam's sizzle. */
-  beamWhine: 0.012,
-  beamSizzle: 0.0461,
-  /**
-   * Relative to beamSizzle: the pops live inside the sizzle rig, where the bed
-   * they have to stick out of sits at 1. Anything below about 10 is masked.
-   * Kept near that floor: spark level scales with bounce count, so this is what
-   * sets the beam's worst-case peak on a densely mirrored board.
-   */
-  beamCrackle: 10,
+  // numerically would put the beam on top of the gameplay. These two are also
+  // the only voices that are never not sounding, and anything fatiguing about
+  // them compounds over a five-minute solve.
+  //
+  // Unlike the one-shots these are NOT resonant-filter drives - the hum's
+  // lowpass sits at Q 1.2, near unity - so they are much closer to the peak
+  // they actually produce.
+  cursor: 0.0166,
+  /** The whole in-game beam. It is one hum now, so it is one number. */
+  beamHum: 0.0152,
   mirrorPlace: 0.04266,
   mirrorRotate: 0.0487,
   mirrorRemove: 0.06137,
@@ -158,9 +180,13 @@ export interface Buses {
   ctx: AudioContext;
   /** One-shot effects, dry. */
   fx: GainNode;
-  /** Continuous voices (cursor tone, game beam). Ducked on pause / tab hide. */
+  /**
+   * Continuous voices (cursor hum, game beam). Ducked on pause / tab hide, and
+   * given its own small reverb send by the engine - see BED_VERB_SEND there,
+   * and do not add a per-voice send on top of it.
+   */
   bed: GainNode;
-  /** Reverb send. One-shots only; a continuous voice here is a constant wash. */
+  /** Reverb send. Per-voice, and one-shots only: the bed has its own tap. */
   verb: GainNode;
 }
 
@@ -707,6 +733,299 @@ export function sizzle(
 
   rig.start(when);
   rig.stop(when + duration + 0.02);
+}
+
+// --- the hum rig ----------------------------------------------------------
+
+/**
+ * The hum's character, in one place, for the same reason MIX and SHAPE exist:
+ * tuning it should mean editing this object, not the voice body. Read at build
+ * time, so a voice must be rebuilt to pick up a change.
+ */
+export const HUM: {
+  partials: {
+    ratio: number;
+    type: OscillatorType;
+    gain: number;
+    /** Whether `setChorus` controls this partial's level. */
+    chorus?: boolean;
+  }[];
+  vibrato: { rate: number; depth: number }[];
+  breatheBase: number;
+  breathe: { rate: number; depth: number }[];
+  cutoffMin: number;
+  cutoffSpan: number;
+  q: number;
+  widthMin: number;
+  widthSpan: number;
+  fifthMin: number;
+  fifthSpan: number;
+} = {
+  /**
+   * Three partials is the whole trick: a fundamental alone is a test tone,
+   * fundamental plus octave is an organ, and it is the FIFTH that makes the ear
+   * hear a resonating object rather than a note. It is the quietest layer and
+   * it is the one doing the characterisation, which is why it is also the one
+   * `setChorus` moves.
+   *
+   * The fundamental is the only sawtooth. Its harmonic series is the body; the
+   * two upper partials are triangles because stacking three saws inside two
+   * octaves just adds beating between harmonics that are already there, and
+   * that beating is exactly the roughness this voice exists to avoid.
+   *
+   * Tuned by ear, the octave ended up LOUDER than the fundamental, which is not
+   * what the paragraph above predicted: it puts the perceived pitch an octave
+   * up and makes the blade read as thinner and more focused. That is also why
+   * the cutoff floor below came down so far - it compensates.
+   */
+  partials: [
+    { ratio: 1, type: "sawtooth", gain: 0.68 },
+    { ratio: 2, type: "triangle", gain: 1 },
+    { ratio: 1.5, type: "triangle", gain: 0.26, chorus: true },
+  ],
+
+  /**
+   * Vibrato, as two sine LFOs rather than one, in cents.
+   *
+   * 5.2 and 3.7 Hz is not an arbitrary pair. Their ratio is irrational enough
+   * that the combined excursion does not repeat on any timescale a listener can
+   * latch onto, which is the difference between "a hum" and "a synth patch with
+   * vibrato on it". A single LFO here reads as a wobble effect within about two
+   * seconds. The second is deliberately shallower so it perturbs the first
+   * rather than competing with it.
+   */
+  vibrato: [
+    { rate: 12, depth: 6 },
+    { rate: 3.7, depth: 2.6 },
+  ],
+
+  /**
+   * Amplitude breathing, same incommensurate-rates rule.
+   *
+   * These were tuned by ear well past what the original design intended: the
+   * two depths sum to 0.6 against a base of 1, so the stage swings 0.4 to 1.6 -
+   * about 12 dB - rather than the gentle 16% it started at. That is a deep,
+   * audible throb, and it is deliberate.
+   *
+   * The invariant that still matters is the sign: base minus the summed depths
+   * must stay ABOVE ZERO. At 0.4 there is room, but there is no longer much of
+   * it. Push either depth past 0.5, or drop the base, and the stage crosses
+   * zero, |gain| folds the waveform back on itself, and the voice starts
+   * distorting instead of breathing.
+   */
+  breatheBase: 1,
+  breathe: [
+    { rate: 0.7, depth: 0.3 },
+    { rate: 0.31, depth: 0.3 },
+  ],
+
+  /**
+   * `setBrightness` maps 0-1 onto this cutoff range. The floor came down a long
+   * way from its original 800 Hz, which is what keeps the boosted octave
+   * partial above from making a dull beam sound bright.
+   */
+  cutoffMin: 350,
+  cutoffSpan: 2100,
+
+  /**
+   * Gentle on purpose. The previous continuous voices ran Q 9 and Q 7, and a
+   * resonant peak sweeping over a low fundamental is a large part of what made
+   * the cursor tone read as a small engine. At 1 the filter shapes the
+   * sawtooth's harmonic series without ever announcing itself.
+   */
+  q: 1,
+
+  /**
+   * Stereo spread of the detuned pair, as `setChorus` opens it. Nearly centred
+   * at rest and very wide when busy, so a folded beam opens up rather than
+   * merely getting louder.
+   */
+  widthMin: 0.06,
+  widthSpan: 0.58,
+
+  /** The fifth's level range, likewise driven by `setChorus`. */
+  fifthMin: 0.26,
+  fifthSpan: 0.16,
+};
+
+/**
+ * A held beam: warm, harmonic, and containing no noise whatsoever.
+ *
+ * Every parameter the game can move is a setter taking an absolute time and a
+ * time constant, and every one of them goes through setTargetAtTime. That is
+ * not a style choice - the beam voice is re-driven on every single board edit,
+ * and a stepped assignment to any of these would click on every tap.
+ *
+ * Frequencies passed in are pre-PITCH, matching `beamCore` and `resonantClick`,
+ * so the file keeps exactly one global transposition knob.
+ */
+interface HumRig {
+  /** Presence. The caller automates this gain and connects it onward. */
+  out: GainNode;
+  /** Fundamental, pre-PITCH. Upper partials follow their ratios. */
+  setPitch(hz: number, when: number, timeConstant?: number): void;
+  /** 0-1 onto the lowpass cutoff. Dull to open. */
+  setBrightness(value: number, when: number, timeConstant?: number): void;
+  /** 0-1 unsteadiness: vibrato depth and rate together. */
+  setWobble(value: number, when: number, timeConstant?: number): void;
+  /** 0-1 thickness: the fifth's level and the stereo spread. */
+  setChorus(value: number, when: number, timeConstant?: number): void;
+  /** Detune between the two panned copies, in cents. Wide is sour. */
+  setSpread(cents: number, when: number, timeConstant?: number): void;
+  start(when: number): void;
+  stop(when: number): void;
+}
+
+function buildHum(
+  ctx: AudioContext,
+  opts: {
+    /** Starting fundamental, pre-PITCH. */
+    hz: number;
+    /** Drive, from MIX. */
+    level: number;
+  }
+): HumRig {
+  const { hz, level } = opts;
+
+  const out = ctx.createGain();
+  out.gain.value = 1;
+
+  const drive = ctx.createGain();
+  drive.gain.value = level;
+  drive.connect(out);
+
+  // The breathing stage. Its intrinsic value is the base and the LFOs sum onto
+  // it, which is why the depths above have to stay inside the base.
+  const breathe = ctx.createGain();
+  breathe.gain.value = HUM.breatheBase;
+  breathe.connect(drive);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.Q.value = HUM.q;
+  filter.frequency.value = HUM.cutoffMin + HUM.cutoffSpan * 0.4;
+  filter.connect(breathe);
+
+  // Two copies of the whole stack, detuned against each other and panned apart.
+  // The beating between them IS the aura; it costs six oscillators and no
+  // reverb. One shared filter downstream is fine - a biquad processes a stereo
+  // input per channel, so the panning survives it.
+  const partials: { gain: GainNode; chorus: boolean }[] = [];
+  const oscs: { osc: OscillatorNode; ratio: number }[] = [];
+  const detunes: { param: AudioParam; sign: number }[] = [];
+  const pans: { param: AudioParam; sign: number }[] = [];
+
+  for (const sign of [-1, 1]) {
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = sign * HUM.widthMin;
+    panner.connect(filter);
+    pans.push({ param: panner.pan, sign });
+
+    for (const partial of HUM.partials) {
+      const partialGain = ctx.createGain();
+      partialGain.gain.value = partial.gain;
+      partialGain.connect(panner);
+      partials.push({ gain: partialGain, chorus: partial.chorus === true });
+
+      const osc = ctx.createOscillator();
+      osc.type = partial.type;
+      osc.frequency.value = hz * partial.ratio * PITCH;
+      // Intrinsic value is the static spread; the vibrato LFOs connect to the
+      // same param and Web Audio sums them.
+      osc.detune.value = sign * HUM.vibrato[0].depth;
+      osc.connect(partialGain);
+
+      oscs.push({ osc, ratio: partial.ratio });
+      detunes.push({ param: osc.detune, sign });
+    }
+  }
+
+  const vibratos = HUM.vibrato.map(({ rate, depth }) => {
+    const lfo = ctx.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = rate;
+
+    const depthGain = ctx.createGain();
+    depthGain.gain.value = depth;
+    lfo.connect(depthGain);
+    for (const { param } of detunes) depthGain.connect(param);
+
+    return { lfo, depthGain, rate, depth };
+  });
+
+  const breathers = HUM.breathe.map(({ rate, depth }) => {
+    const lfo = ctx.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = rate;
+
+    const depthGain = ctx.createGain();
+    depthGain.gain.value = depth;
+    lfo.connect(depthGain).connect(breathe.gain);
+
+    return lfo;
+  });
+
+  const sources = [
+    ...oscs.map((o) => o.osc),
+    ...vibratos.map((v) => v.lfo),
+    ...breathers,
+  ];
+
+  return {
+    out,
+    setPitch(value, when, timeConstant = 0.2) {
+      const base = Math.max(20, value) * PITCH;
+      for (const { osc, ratio } of oscs) {
+        osc.frequency.setTargetAtTime(base * ratio, when, timeConstant);
+      }
+    },
+    setBrightness(value, when, timeConstant = 0.2) {
+      filter.frequency.setTargetAtTime(
+        HUM.cutoffMin + HUM.cutoffSpan * clamp(value, 0, 1),
+        when,
+        timeConstant
+      );
+    },
+    setWobble(value, when, timeConstant = 0.25) {
+      const w = clamp(value, 0, 1);
+      for (const { depthGain, lfo, rate, depth } of vibratos) {
+        // Depth and rate move together: an emitter that wanders further also
+        // wanders faster. Moving only the depth reads as a deeper vibrato,
+        // which is a musical effect rather than an instability.
+        depthGain.gain.setTargetAtTime(depth * (1 + 2 * w), when, timeConstant);
+        lfo.frequency.setTargetAtTime(rate * (1 + 0.28 * w), when, timeConstant);
+      }
+    },
+    setChorus(value, when, timeConstant = 0.3) {
+      const c = clamp(value, 0, 1);
+      for (const { gain, chorus } of partials) {
+        if (!chorus) continue;
+        gain.gain.setTargetAtTime(
+          HUM.fifthMin + HUM.fifthSpan * c,
+          when,
+          timeConstant
+        );
+      }
+      for (const { param, sign } of pans) {
+        param.setTargetAtTime(
+          sign * (HUM.widthMin + HUM.widthSpan * c),
+          when,
+          timeConstant
+        );
+      }
+    },
+    setSpread(cents, when, timeConstant = 0.3) {
+      for (const { param, sign } of detunes) {
+        param.setTargetAtTime(sign * cents, when, timeConstant);
+      }
+    },
+    start(when: number) {
+      for (const src of sources) src.start(when);
+    },
+    stop(when: number) {
+      for (const src of sources) src.stop(when);
+    },
+  };
 }
 
 // --- the strike primitives ------------------------------------------------
@@ -1330,50 +1649,47 @@ export interface CursorVoice {
 }
 
 /**
- * The home page laser tone: a beam being drawn by the cursor. The tone is the
- * core, the arc is what makes it a laser rather than a synth note being held.
- * Standing still is silent.
+ * Pitch of the cursor hum, pre-PITCH, so the audible values are half these:
+ * 105 Hz at rest rising to 150 Hz at full speed. That band is chosen to sit
+ * above where a hum turns into a motor - the old voice ran a 52 Hz sawtooth
+ * pair under a resonant sweep, which is a small engine - and below where it
+ * turns into a whine.
  *
- * It runs the same sizzle rig the in-game beam does, at lower intensity, so the
- * home page and the board are audibly the same machine.
+ * The rise with speed is the Doppler idea, not physics: a saber swung fast
+ * reads as pitching up, and the ear accepts it as effort.
+ */
+const CURSOR_IDLE_HZ = 210;
+const CURSOR_FAST_HZ = 300;
+
+/**
+ * How present the hum is with the pointer completely still. Not zero: a saber
+ * idles. Low enough that leaving the tab open is not an imposition, and the
+ * bed bus ducks it away entirely when the tab is hidden.
+ */
+const CURSOR_IDLE_PRESENCE = 0.22;
+
+/**
+ * The home page hum: the blade, idling, with the pointer as the hand holding
+ * it. Moving swells it, brightens it and pitches it up; a still pointer settles
+ * back to a soft idle rather than to silence.
+ *
+ * It is the same `buildHum` the in-game beam runs, at a different setting, so
+ * the home page and the board are audibly the same instrument.
  */
 export function createCursorVoice({ ctx, bed }: Buses): CursorVoice {
   const now = ctx.currentTime;
 
-  // Speed shapes this one gain; the per-layer levels below stay fixed, so the
-  // balance between tone and arc does not shift as the cursor accelerates.
-  const out = ctx.createGain();
-  out.gain.setValueAtTime(NEAR_ZERO, now);
-  out.connect(bed);
+  const rig = buildHum(ctx, { hz: CURSOR_IDLE_HZ, level: MIX.cursor });
+  rig.out.gain.value = CURSOR_IDLE_PRESENCE;
 
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.Q.value = 9;
-  filter.frequency.setValueAtTime(260, now);
+  // Arrival is a separate stage from presence on purpose. setSpeed runs every
+  // animation frame and owns rig.out.gain outright; a fade-in scheduled on that
+  // same param would be overwritten by the first frame and become a click.
+  const fade = ctx.createGain();
+  fade.gain.setValueAtTime(NEAR_ZERO, now);
+  fade.gain.setTargetAtTime(1, now, 0.6);
+  rig.out.connect(fade).connect(bed);
 
-  const core = ctx.createGain();
-  core.gain.value = MIX.cursor;
-  filter.connect(core).connect(out);
-
-  const oscs = [-11, 11].map((cents) => {
-    const osc = ctx.createOscillator();
-    osc.type = "sawtooth";
-    osc.detune.setValueAtTime(cents, now);
-    osc.frequency.setValueAtTime(105 * PITCH, now);
-    osc.connect(filter);
-    osc.start(now);
-    return osc;
-  });
-
-  const rig = buildSizzle(ctx, {
-    bandHz: 3000,
-    intensity: 0.45,
-    crackle: 0.16,
-    q: 4,
-  });
-  const sizzleGain = ctx.createGain();
-  sizzleGain.gain.value = MIX.cursorSizzle * SIZZLE_LEVEL;
-  rig.out.connect(sizzleGain).connect(out);
   rig.start(now);
 
   let stopped = false;
@@ -1383,36 +1699,26 @@ export function createCursorVoice({ ctx, bed }: Buses): CursorVoice {
       if (stopped) return;
       const s = clamp(speed, 0, 1);
       const t = ctx.currentTime;
-      // Short time constants so the tone tracks the cursor rather than lagging
-      // behind it, but not so short that it zippers.
-      out.gain.setTargetAtTime(s * s, t, 0.05);
-      filter.frequency.setTargetAtTime(260 + s * 1900, t, 0.05);
-      for (const osc of oscs) {
-        osc.frequency.setTargetAtTime(105 + s * 55, t, 0.08);
-      }
 
-      // A fast cursor is a beam being dragged: brighter, and arcing harder.
-      const band = 2400 + s * 3400;
-      rig.band.frequency.setTargetAtTime(band, t, 0.05);
-
-      const budget = depthBudget(band);
-      const wantFm = band * (0.08 + s * 0.12);
-      const wantStep = band * (0.18 + s * 0.24);
-      const fit = Math.min(1, budget / (wantFm + wantStep));
-      rig.fmDepth.gain.setTargetAtTime(wantFm * fit, t, 0.06);
-      rig.stepDepth.gain.setTargetAtTime(wantStep * fit, t, 0.06);
-      rig.stepRate.setTargetAtTime(0.35 + s * 0.9, t, 0.08);
-      rig.ampFast.gain.setTargetAtTime(0.35 + s * 0.3, t, 0.08);
-      rig.ampSlow.gain.setTargetAtTime(0.5 + s * 0.25, t, 0.08);
-      rig.crackleRate.setTargetAtTime(0.2 + s * 0.9, t, 0.1);
+      // Short time constants so the hum tracks the pointer rather than lagging
+      // behind it, but not so short that it zippers. Squared, so slow drift
+      // stays near idle and only a real swing opens it up.
+      rig.out.gain.setTargetAtTime(
+        CURSOR_IDLE_PRESENCE + (1 - CURSOR_IDLE_PRESENCE) * s * s,
+        t,
+        0.05
+      );
+      rig.setPitch(CURSOR_IDLE_HZ + (CURSOR_FAST_HZ - CURSOR_IDLE_HZ) * s, t, 0.06);
+      rig.setBrightness(0.14 + 0.66 * s, t, 0.05);
+      rig.setChorus(0.3 + 0.4 * s, t, 0.08);
+      rig.setWobble(0.12 + 0.28 * s, t, 0.1);
     },
     stop() {
       if (stopped) return;
       stopped = true;
       const t = ctx.currentTime;
-      out.gain.cancelScheduledValues(t);
-      out.gain.setTargetAtTime(NEAR_ZERO, t, 0.05);
-      for (const osc of oscs) osc.stop(t + 0.3);
+      fade.gain.cancelScheduledValues(t);
+      fade.gain.setTargetAtTime(NEAR_ZERO, t, 0.05);
       rig.stop(t + 0.3);
     },
   };
@@ -1433,68 +1739,52 @@ export interface BeamVoice {
 }
 
 /**
+ * Beam pitch, pre-PITCH, so the audible band is 96-150 Hz. A longer path
+ * resonates lower, the same way a longer string does, which gives the whole
+ * solve a slow downward arc as the beam grows.
+ */
+const BEAM_SHORT_HZ = 300;
+const BEAM_LONG_HZ = 192;
+
+/** Detune between the panned copies. Narrow is a blade, wide is a fault. */
+const BEAM_SPREAD_BASE = 6;
+const BEAM_SPREAD_MISTAKE = 34;
+
+/**
  * The in-game beam: the laser the player is actually building, running
- * continuously, not an abstract drone. A real cutting head is a high whine plus
- * an arc, and both of those move as the beam changes, which is the point: the
- * board is legible by ear.
+ * continuously, not an abstract drone. It is a held blade, and the board is
+ * legible by ear through how that blade sits:
+ *
+ *   length       -> pitch and presence. Longer is lower and bigger.
+ *   terminatedBy -> brightness. A beam that reached the flag is under control
+ *                   and rings clear; one splashing off an obstacle is dull.
+ *   bounces      -> thickness, via the fifth's level and the stereo spread.
+ *                   Every fold adds another resonance to the chord. This is the
+ *                   axis that used to be carried by spark density.
+ *   mistake      -> the copies pushed apart until they beat, plus an unsteady
+ *                   vibrato, a pitch sag and a darker filter.
  *
  * Every transition goes through setTargetAtTime, because the player edits the
  * board constantly and any stepped assignment here would click on every tap.
  *
  * It is very quiet, and it has to be: this is running for the entire five
- * minutes of a solve, and a fry that is merely "not too loud" for 300ms is
+ * minutes of a solve, and anything merely "not too loud" for 300ms is
  * unlistenable for 300 seconds.
  */
 export function createBeamVoice({ ctx, bed }: Buses): BeamVoice {
   const now = ctx.currentTime;
 
-  const out = ctx.createGain();
-  out.gain.setValueAtTime(NEAR_ZERO, now);
+  const rig = buildHum(ctx, { hz: BEAM_SHORT_HZ, level: MIX.beamHum });
+  rig.out.gain.value = 0.6;
+
+  // Presence lives on rig.out and is owned by setState; arrival is this
+  // separate stage, so the two cannot fight over one param.
+  const fade = ctx.createGain();
+  fade.gain.setValueAtTime(NEAR_ZERO, now);
   // Fade in rather than appear, so arriving on the board is not a click.
-  out.gain.setTargetAtTime(0.6, now, 0.9);
-  out.connect(bed);
+  fade.gain.setTargetAtTime(1, now, 0.9);
+  rig.out.connect(fade).connect(bed);
 
-  // The whine. A pair of sawtooths through a narrow band is a formant, which
-  // reads as a machine resonating rather than as a test tone.
-  const whineBand = ctx.createBiquadFilter();
-  whineBand.type = "bandpass";
-  whineBand.Q.value = 7;
-  whineBand.frequency.setValueAtTime(2900 * PITCH, now);
-  const whineGain = ctx.createGain();
-  whineGain.gain.value = MIX.beamWhine;
-  whineBand.connect(whineGain).connect(out);
-
-  const whineOscs = [-6, 6].map((cents) => {
-    const osc = ctx.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(1380 * PITCH, now);
-    osc.detune.setValueAtTime(cents, now);
-    osc.connect(whineBand);
-    osc.start(now);
-    return osc;
-  });
-
-  // Micro-instability on the whine. Without it a held tone at this pitch reads
-  // as a fault tone in the listener's own equipment.
-  const wobble = ctx.createBufferSource();
-  wobble.buffer = steppedRandomBuffer(ctx, STEP_BASE_HZ, STEP_BASE_SECONDS);
-  wobble.loop = true;
-  wobble.playbackRate.value = 0.035;
-  const wobbleDepth = ctx.createGain();
-  wobbleDepth.gain.value = 11;
-  for (const osc of whineOscs) wobbleDepth.connect(osc.detune);
-  wobble.connect(wobbleDepth);
-  wobble.start(now, randomOffset(wobble.buffer));
-
-  const rig = buildSizzle(ctx, {
-    bandHz: 4200,
-    intensity: 0.5,
-    crackle: 0.3,
-    q: 6,
-  });
-  const sizzleGain = ctx.createGain();
-  sizzleGain.gain.value = MIX.beamSizzle * SIZZLE_LEVEL;
-  rig.out.connect(sizzleGain).connect(out);
   rig.start(now);
 
   let stopped = false;
@@ -1505,14 +1795,14 @@ export function createBeamVoice({ ctx, bed }: Buses): BeamVoice {
       const t = ctx.currentTime;
 
       // 5-40 cells is the working range; 14 bounces is already a busy board, so
-      // the spark density saturates before the theoretical maximum.
+      // the thickness saturates before the theoretical maximum.
       const len = clamp((length - 5) / 35, 0, 1);
       const hits = clamp(bounces / 14, 0, 1);
 
       // What the beam ends on decides its character. A beam that made it to the
       // flag is a beam under control: focused, bright, steady. One splashing
       // off an obstacle or running off the board is unfocused and dull, and
-      // sprays more.
+      // wanders more.
       let bright =
         terminatedBy === "flag"
           ? 1
@@ -1530,100 +1820,43 @@ export function createBeamVoice({ ctx, bed }: Buses): BeamVoice {
               ? 0.66
               : 0.5;
 
-      // A mistake sours everything at once: duller, rougher, unstable. It is
-      // meant to be uncomfortable without being loud.
+      // A mistake sours everything at once: duller, unsteadier, and beating
+      // against itself. It is meant to be uncomfortable without being loud.
       if (mistake) {
         bright *= 0.6;
         rough = Math.min(1, rough + 0.35);
       }
 
-      // A long beam is a bigger installation: more present, and lower, because
-      // a longer resonating path is a lower one.
-      // Bounces add a little presence of their own, on top of the sparks below.
-      // Every mirror is another lossy hot spot in the path, so a beam folded six
-      // times is genuinely doing more work than one that runs straight - and
-      // making that audible only through spark density left the whole axis
-      // riding on the quietest layer in the voice.
-      // Range deliberately narrow (0.55-1.0, not 0.35-1.15). This is a
-      // sustained voice: a dense board must stay clearly underneath the
-      // one-shots, and measured end to end the spark layer already widens the
-      // span well past what this curve suggests.
-      out.gain.setTargetAtTime(
+      // A long beam is a bigger installation, and a folded one is doing more
+      // work than a straight one. Range deliberately narrow (0.55-1.0): this is
+      // a sustained voice, and a dense board must stay clearly underneath the
+      // one-shots however busy it gets.
+      rig.out.gain.setTargetAtTime(
         length > 0 ? 0.55 + 0.3 * len + 0.15 * hits : NEAR_ZERO,
         t,
         0.3
       );
 
-      // `bright` has to move the whine's own pitch, not just the formant over
-      // it. With the arc layer off the whine is the entire voice, and a formant
-      // shift alone left a beam splashing off an obstacle and one running off
-      // the board measurably identical. A tighter beam resonates higher.
-      const whineHz = (1560 - 500 * len) * PITCH * (0.82 + 0.36 * bright);
-      for (const osc of whineOscs) {
-        osc.frequency.setTargetAtTime(whineHz, t, 0.3);
-      }
-      whineBand.frequency.setTargetAtTime(
-        whineHz * (1.4 + 1.2 * bright),
+      // The sag on a mistake is small and it is a pitch move, not a level move.
+      // Four percent is under a semitone - not heard as a wrong note, only as
+      // the blade dropping slightly, which is what makes it read as a fault.
+      rig.setPitch(
+        (BEAM_SHORT_HZ - (BEAM_SHORT_HZ - BEAM_LONG_HZ) * len) *
+          (mistake ? 0.96 : 1),
         t,
         0.3
       );
-
-      // The detuned pair is what carries the mistake: pushed apart they beat
-      // against each other and the whine audibly sours.
-      const spread = mistake ? 34 : 6;
-      whineOscs[0].detune.setTargetAtTime(-spread, t, 0.35);
-      whineOscs[1].detune.setTargetAtTime(spread, t, 0.35);
-
-      // Roughness has to reach the whine, not only the arc. Every other `rough`
-      // destination lives inside the sizzle rig, so with SIZZLE_LEVEL at 0 a
-      // beam splashing off an obstacle and one running off the board became
-      // indistinguishable. An unsteady emitter wanders more.
-      wobbleDepth.gain.setTargetAtTime(6 + 26 * rough, t, 0.3);
-      wobble.playbackRate.setTargetAtTime(0.025 + 0.05 * rough, t, 0.3);
-
-      // The arc band. Stays inside 2-9 kHz at every setting.
-      const band = 3200 + 2900 * bright;
-      rig.band.frequency.setTargetAtTime(band, t, 0.25);
-      rig.band.Q.setTargetAtTime(3.5 + 4.5 * bright, t, 0.25);
-
-      // Same budget rule as the one-shots: the depths glide on the same time
-      // constant as the band itself, so their ratio holds through a transition
-      // and the cutoff cannot be walked through zero by a board edit.
-      const budget = depthBudget(band);
-      const wantFm = band * (0.07 + 0.16 * rough);
-      const wantStep = band * (0.16 + 0.3 * rough);
-      const fit = Math.min(1, budget / (wantFm + wantStep));
-      rig.fmDepth.gain.setTargetAtTime(wantFm * fit, t, 0.25);
-      rig.stepDepth.gain.setTargetAtTime(wantStep * fit, t, 0.25);
-      // Kept under the Q above so the modulated bandwidth cannot go negative.
-      rig.qDepth.gain.setTargetAtTime(0.8 + 2.4 * rough, t, 0.3);
-      rig.stepRate.setTargetAtTime(0.3 + 1.1 * rough + 0.3 * hits, t, 0.25);
-
-      // The amplitude modulation has to move with roughness too. Leaving it at
-      // its build-time depth was what made the beam measure as static noise:
-      // the filter was churning but the envelope underneath it was flat, and
-      // the envelope is what the ear uses to decide something is alive.
-      rig.ampFast.gain.setTargetAtTime(0.4 + 0.35 * rough, t, 0.3);
-      rig.ampSlow.gain.setTargetAtTime(0.55 + 0.25 * rough, t, 0.3);
-
-      // Every mirror is a hot spot, and hot spots spit. A rough termination
-      // spits a little on its own even with no mirrors placed.
-      const sparks = clamp(hits * 0.8 + rough * 0.3, 0, 1);
-      rig.crackleLevel.gain.setTargetAtTime(
-        MIX.beamCrackle * CRACKLE_LEVEL * (0.08 + 0.92 * sparks),
-        t,
-        0.35
-      );
-      rig.crackleRate.setTargetAtTime(0.1 + 0.55 * sparks, t, 0.35);
+      rig.setBrightness(0.08 + 0.82 * bright, t, 0.3);
+      rig.setChorus(clamp(0.15 + 0.75 * hits, 0, 1), t, 0.35);
+      rig.setSpread(mistake ? BEAM_SPREAD_MISTAKE : BEAM_SPREAD_BASE, t, 0.35);
+      rig.setWobble(rough, t, 0.3);
     },
     stop() {
       if (stopped) return;
       stopped = true;
       const t = ctx.currentTime;
-      out.gain.cancelScheduledValues(t);
-      out.gain.setTargetAtTime(NEAR_ZERO, t, 0.2);
-      for (const osc of whineOscs) osc.stop(t + 0.8);
-      wobble.stop(t + 0.8);
+      fade.gain.cancelScheduledValues(t);
+      fade.gain.setTargetAtTime(NEAR_ZERO, t, 0.2);
       rig.stop(t + 0.8);
     },
   };

@@ -15,7 +15,8 @@
     "puzzles:solutions": "tsx scripts/puzzles/solutions.ts",
     "puzzles:verify-min": "tsx scripts/puzzles/verify-exact-min.ts",
     "puzzles:merge-min": "tsx scripts/puzzles/merge-min-shards.ts",
-    "verify:share": "tsx scripts/verify-share-text.ts"
+    "verify:share": "tsx scripts/verify-share-text.ts",
+    "sound:measure": "node scripts/audio/measure.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
