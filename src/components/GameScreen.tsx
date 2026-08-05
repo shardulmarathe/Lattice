@@ -33,6 +33,14 @@ import TargetCodeIntro from "@/components/Game/TargetCodeIntro";
 import { useTimer } from "@/hooks/useTimer";
 import { useDailyRollover } from "@/hooks/useDailyRollover";
 import { hasSeenTutorial, markTutorialSeen } from "@/lib/tutorialStorage";
+import {
+  duck,
+  play,
+  playDigit,
+  setBeamActive,
+  setBeamState,
+} from "@/lib/audio/engine";
+import { armVictoryResolve } from "@/lib/audio/victoryHandoff";
 
 const COMPLETION_NAV_DELAY_MS = 350;
 
@@ -222,6 +230,10 @@ export default function GameScreen() {
     setSavedComplete(true);
     setCompletionSeconds(seconds);
     markTutorialSeen();
+    // Part one of the sting. Its tail is still sounding when the route changes
+    // COMPLETION_NAV_DELAY_MS later, where CompleteScreen resolves it.
+    play("victoryCharge");
+    armVictoryResolve();
 
     // Practice solves persist only to the throwaway practice slot, the
     // canonical record (and its shareable time) is never touched.
@@ -322,8 +334,78 @@ export default function GameScreen() {
 
     if (newlyWrong > 0) {
       setWrongNumberHits((count) => count + newlyWrong);
+      // Edge-triggered, unlike the red glow, which loops for as long as the
+      // board stays wrong. One buzz per new mistake, never a repeating alarm.
+      play("wrongState");
     }
   }, [incorrectKeys, isEarlyFlagMistake]);
+
+  // Rising ping per code digit collected in order, pitched by position so the
+  // last digit is the highest. Seeded on first run like the mistake tracker so
+  // a mid-solve reload is silent, and suppressed when HINT caused the gain.
+  const prevPrefixRef = useRef(0);
+  const prefixInitRef = useRef(false);
+  const suppressDigitPingRef = useRef(false);
+
+  useEffect(() => {
+    const previous = prevPrefixRef.current;
+    prevPrefixRef.current = correctPrefixLength;
+
+    if (!prefixInitRef.current) {
+      prefixInitRef.current = true;
+      return;
+    }
+
+    if (suppressDigitPingRef.current) {
+      suppressDigitPingRef.current = false;
+      return;
+    }
+
+    if (correctPrefixLength <= previous) return;
+
+    for (let i = previous; i < correctPrefixLength; i++) {
+      playDigit(i);
+    }
+  }, [correctPrefixLength]);
+
+  // The background is not ambience, it is the beam itself: the same path the
+  // board is drawing, so every mirror placed audibly rewrites what you hear.
+  // Kept on for the solved board and for SEE SOLVE too - a beam is still drawn
+  // in both, and cutting the sound at the moment of the solve made the laser
+  // stop dead right where it should be most present.
+  useEffect(() => {
+    setBeamActive(true);
+  }, []);
+
+  // A bounce is a visited cell that holds a mirror, counted per visit: a path
+  // that crosses the same mirror twice really does sizzle twice.
+  const beamBounces = useMemo(
+    () =>
+      laserResult.visitedCells.filter(
+        (cell) => getMirrorAt(mirrors, cell.x, cell.y) !== null
+      ).length,
+    [laserResult.visitedCells, mirrors]
+  );
+
+  useEffect(() => {
+    setBeamState({
+      length: laserResult.segments.length,
+      bounces: beamBounces,
+      // "revisit" is vestigial in the LaserResult union, calculateLaserPath
+      // never emits it, and the voice only models terminations that exist.
+      terminatedBy:
+        laserResult.terminatedBy === "revisit" ? null : laserResult.terminatedBy,
+      mistake: incorrectKeys.size > 0 || isEarlyFlagMistake,
+    });
+  }, [laserResult, beamBounces, incorrectKeys, isEarlyFlagMistake]);
+
+  useEffect(() => {
+    return () => {
+      setBeamActive(false);
+      duck("paused", false);
+      duck("locked", false);
+    };
+  }, []);
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -331,6 +413,7 @@ export default function GameScreen() {
 
       const cell = board[y]?.[x];
       if (cell?.type === "number" || cell?.type === "flag") {
+        play("illegalTap");
         if (placementWarningTimerRef.current !== null) {
           window.clearTimeout(placementWarningTimerRef.current);
         }
@@ -355,14 +438,17 @@ export default function GameScreen() {
           window.clearTimeout(placementWarningTimerRef.current);
           placementWarningTimerRef.current = null;
         }
+        play("mirrorPlace");
         setMirrors((prev) => [...prev, { x, y, orientation: "/" }]);
         return;
       }
 
       const nextOrientation = cycleMirrorOrientation(existing);
       if (nextOrientation === null) {
+        play("mirrorRemove");
         setMirrors((prev) => prev.filter((m) => !(m.x === x && m.y === y)));
       } else {
+        play("mirrorRotate");
         setMirrors((prev) =>
           prev.map((m) =>
             m.x === x && m.y === y
@@ -385,6 +471,7 @@ export default function GameScreen() {
 
   const handleClearBoard = useCallback(() => {
     if (isComplete) return;
+    play("mirrorRemove");
     setMirrors([]);
     // Clearing the board resets the session mistake and hint counters.
     setWrongNumberHits(0);
@@ -430,6 +517,10 @@ export default function GameScreen() {
       nextValidation.generatedSequence !== puzzle.code &&
       !nextValidation.isComplete;
 
+    // The hint has its own voice; the digit pings it would otherwise trigger
+    // would read as the player having earned them.
+    suppressDigitPingRef.current = true;
+    play("hintChime");
     setMirrors(next);
     setHintsUsed((h) => h + 1);
     setHintFlash({
@@ -447,19 +538,32 @@ export default function GameScreen() {
     puzzle,
   ]);
 
+  // The engine ducks the bed on tab-hide itself; these are the in-app reasons.
+  useEffect(() => {
+    duck("paused", isPaused);
+  }, [isPaused]);
+
+  useEffect(() => {
+    duck("locked", gameplayLocked);
+  }, [gameplayLocked]);
+
   const handlePause = useCallback(() => {
+    play("uiTick");
     setIsPaused((p) => !p);
   }, []);
 
   const handleResume = useCallback(() => {
+    play("uiTick");
     setIsPaused(false);
   }, []);
 
   const handleHome = useCallback(() => {
+    play("uiTick");
     router.push("/");
   }, [router]);
 
   const handleRules = useCallback(() => {
+    play("uiTick");
     setShowHowToPlay(true);
   }, []);
 

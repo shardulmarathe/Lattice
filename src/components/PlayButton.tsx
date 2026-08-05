@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
+import { play } from "@/lib/audio/engine";
 import { isPuzzleComplete } from "@/lib/gameStorage";
 import LaserBoxTrace from "./LaserBoxTrace";
 
@@ -143,6 +144,9 @@ export default function PlayButton() {
     lastFrameTimeRef.current = 0;
     setTraceProgress(0);
     setIsNavigating(true);
+    // Rises under the perimeter lap; navFire below closes it as the route
+    // changes. The lap is variable-length, so this is a fixed approximation.
+    play("navCharge");
 
     const animate = (now: number) => {
       const elapsed = now - startTime;
@@ -184,6 +188,7 @@ export default function PlayButton() {
 
       displayProgressRef.current = 1;
       setTraceProgress(1);
+      play("navFire");
       router.push(route);
     } finally {
       cancelAnimationFrame(rafRef.current);

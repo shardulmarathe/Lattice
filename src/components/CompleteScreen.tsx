@@ -19,8 +19,18 @@ import {
 } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
 import { useDailyRollover } from "@/hooks/useDailyRollover";
+import {
+  play,
+  playIn,
+  setBeamActive,
+  setBeamState,
+} from "@/lib/audio/engine";
+import { calculateLaserPath, getMirrorAt } from "@/lib/laserEngine";
+import { consumeVictoryResolve } from "@/lib/audio/victoryHandoff";
 
 const ACCENT = "#FF2D2D";
+/** Shared by the checkmark's spring delay and the victory resolve it lands on. */
+const CHECKMARK_DELAY_S = 0.3;
 
 function StatTile({
   label,
@@ -147,7 +157,29 @@ export default function CompleteScreen() {
     setWrongNumberHits(saved.wrongNumberHits);
     setHintsUsed(saved.hintsUsed);
     setIsReady(true);
+
+    // The solved beam keeps running under the results. It is the same voice the
+    // board was driving, handed the winning path, so the laser does not just
+    // stop dead at the moment you finish.
+    const solved = calculateLaserPath(puzzle, saved.mirrors);
+    setBeamState({
+      length: solved.segments.length,
+      bounces: solved.visitedCells.filter(
+        (cell) => getMirrorAt(saved.mirrors, cell.x, cell.y) !== null
+      ).length,
+      terminatedBy: "flag",
+      mistake: false,
+    });
+    setBeamActive(true);
+
+    // Part two of the victory sting, scheduled to land on the checkmark's
+    // spring below. Only a solve arms it, so revisiting this screen is silent.
+    if (consumeVictoryResolve()) {
+      playIn("victoryResolve", CHECKMARK_DELAY_S);
+    }
   }, [puzzle, router, playRoute, isPractice]);
+
+  useEffect(() => () => setBeamActive(false), []);
 
   // Text the SHARE button copies to the clipboard (revealed only when pasted).
   const shareText = useMemo(
@@ -166,6 +198,7 @@ export default function CompleteScreen() {
   const speedScore = getSpeedScore(puzzle, timeSeconds);
 
   const handleSeeSolve = useCallback(() => {
+    play("uiTick");
     const saved = loadGameState(puzzle);
     if (!saved) return;
 
@@ -175,12 +208,14 @@ export default function CompleteScreen() {
   }, [puzzle, router, playRoute]);
 
   const handleReplay = useCallback(() => {
+    play("uiTick");
     router.push(replayRoute);
   }, [router, replayRoute]);
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
+      play("hintChime");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -216,7 +251,11 @@ export default function CompleteScreen() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+          transition={{
+            delay: CHECKMARK_DELAY_S,
+            type: "spring",
+            stiffness: 200,
+          }}
           className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#FF2D2D]"
         >
           <svg

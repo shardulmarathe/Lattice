@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import SoundProvider from "@/components/Sound/SoundProvider";
 import { getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -62,7 +63,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        {/* Sits above the route boundary so the victory sting can start on the
+            board in /play and finish on the checkmark in /complete. */}
+        <SoundProvider>{children}</SoundProvider>
         <Analytics />
       </body>
     </html>

@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { play } from "@/lib/audio/engine";
 
 const POST_RULES_DELAY_MS = 700;
 const HERO_HOLD_MS = 1200;
@@ -225,6 +226,13 @@ export default function TargetCodeIntro({
     finishedRef.current = true;
     onIntroComplete();
   }, [onIntroComplete]);
+
+  // One beat only, on the reveal. The flyaway used to fire a second sound and
+  // it read as an unexplained noise: nothing the player did caused it, and the
+  // animation is already carrying the moment.
+  useEffect(() => {
+    if (phase === "hero") play("hintChime");
+  }, [phase]);
 
   // Safety net: if a measurement/layout/font race stalls a phase (e.g. the fly
   // metrics never compute, so the settling animation's onAnimationComplete never

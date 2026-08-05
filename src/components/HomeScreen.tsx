@@ -4,10 +4,12 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDailyRollover } from "@/hooks/useDailyRollover";
+import { play } from "@/lib/audio/engine";
 import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
 import PastGamesModal from "./Archive/PastGamesModal";
 import PlayButton from "./PlayButton";
+import SoundToggle from "./Sound/SoundToggle";
 
 const buttonClass =
   "relative z-20 w-[min(85vw,14rem)] whitespace-nowrap border border-white/20 bg-black px-9 py-[0.9rem] text-center text-[clamp(0.8rem,3.4vw,0.95rem)] tracking-[0.28em] text-white transition-colors hover:border-[#FF2D2D] hover:bg-[#FF2D2D]/25 hover:text-white -mr-[0.28em]";
@@ -35,6 +37,10 @@ export default function HomeScreen() {
     <main className="relative flex min-h-[100dvh] w-full items-center justify-center bg-black px-[max(1.5rem,env(safe-area-inset-left))] py-[max(2.5rem,env(safe-area-inset-bottom))]">
       <CursorLaserTrail suppressTrail={isOverButtons} />
 
+      {/* Doubles as the audio unlock affordance: browsers refuse to start an
+          AudioContext without a gesture, and moving the cursor is not one. */}
+      <SoundToggle className="absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-30 p-2 text-white/45 transition-colors hover:text-[#FF2D2D]" />
+
       <motion.div
         initial={false}
         animate={mounted ? { opacity: 1, y: 0 } : false}
@@ -61,7 +67,10 @@ export default function HomeScreen() {
             type="button"
             whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setShowPastGames(true)}
+            onClick={() => {
+              play("uiTick");
+              setShowPastGames(true);
+            }}
             className={buttonClass}
           >
             PAST GAMES
@@ -71,7 +80,10 @@ export default function HomeScreen() {
             type="button"
             whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setShowHowToPlay(true)}
+            onClick={() => {
+              play("uiTick");
+              setShowHowToPlay(true);
+            }}
             className={buttonClass}
           >
             RULES

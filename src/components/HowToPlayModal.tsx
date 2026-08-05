@@ -6,6 +6,7 @@ import {
   MIRROR_CYCLE_SECTION,
   TUTORIAL_SCENARIOS,
 } from "@/data/tutorialScenarios";
+import { play } from "@/lib/audio/engine";
 import MirrorCycleDemo from "./HowToPlay/MirrorCycleDemo";
 import TutorialDemo from "./HowToPlay/TutorialDemo";
 
@@ -52,12 +53,14 @@ export default function HowToPlayModal({
   dismissOnBackdrop = true,
 }: HowToPlayModalProps) {
   const handleConfirm = () => {
+    play("uiTick");
     onConfirm?.();
     onClose();
   };
 
   const handleBackdropClick = () => {
     if (dismissOnBackdrop) {
+      play("uiTick");
       onClose();
     }
   };

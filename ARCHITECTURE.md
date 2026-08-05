@@ -126,6 +126,104 @@ These are load-bearing, breaking them is a player-visible regression:
 When generating new puzzles, work in batches of five and schedule none of them at
 generation time.
 
+## Sound
+
+Every sound is synthesized in Web Audio at runtime, there are no audio assets.
+The palette lives in `src/lib/audio/voices.ts`. All levels sit in `MIX` and all
+durations in `SHAPE`; tuning the mix means editing those two objects, never the
+voice bodies.
+
+A laser is four layers, not one: a transient crack, a resonant descending body,
+**sizzle**, and a tail. The sizzle is the layer that decides whether the palette
+reads as a laser or as an arcade bleep, and the thing to understand about it is
+that **sizzle is noise modulating something, not noise by itself**. Static
+bandpassed noise sounds like "shhh"; noise driven into a filter's cutoff sounds
+like frying. Two earlier passes failed precisely here, one landing on an arcade
+"pew" and one on a lightsaber.
+
+`sizzle()` therefore modulates four destinations at once, following how arc and
+electricity effects are actually built: a white-noise source and a
+sample-and-hold source both drive the bandpass `frequency`, a slower
+sample-and-hold drives its `Q` so the bandwidth breathes, and another source
+multiplies the output gain. Sparse impulses from `crackleBuffer` add the
+discrete pops. The mechanism that makes all of this possible without any assets
+is that Web Audio lets an `AudioBufferSourceNode` connect **directly to an
+`AudioParam`** — so a noise buffer is a literal audio-rate modulator.
+
+Two hazards live in that primitive, both of which have bitten:
+
+- **Modulation depth must stay strictly below the band floor.** If the summed
+  excursion drives `bandpass.frequency` to or through 0 Hz the filter goes
+  unstable, and the voice measured a peak of 112378 instead of 0.1.
+- **The generated buffers are `Math.random()`.** That is fine in the app but
+  means any measurement of a click or sizzle voice must seed the generator
+  first, or the numbers are noise (see below).
+
+`src/lib/audio/engine.ts` is a module-level singleton, deliberately outside
+React. It has to be: the victory sting starts on the board in `/play` and
+finishes on the checkmark in `/complete`, which is impossible if the
+`AudioContext` is owned by a component that unmounts at the route boundary.
+`SoundProvider` therefore wraps `{children}` in `src/app/layout.tsx`, above the
+route boundary, and `src/lib/audio/victoryHandoff.ts` carries the one-shot
+"a solve just happened" flag across the navigation. That flag is module state
+rather than storage on purpose, so a reload or a deep link to `/complete` is
+silent.
+
+Load-bearing rules:
+
+- **Nothing is audible until a real gesture.** Browsers refuse to start an
+  `AudioContext` otherwise, and `mousemove` does not qualify. `unlock()` is the
+  only thing that constructs the context; applying a stored preference must
+  never call it, or every visitor gets a context they never asked for.
+- **The sound toggle owns its own gesture.** The global arming listener skips
+  events inside `[data-sound-toggle]`. Without that skip it arms audio on
+  `pointerdown`, so the toggle's `click` arrives already armed and reads as
+  "mute", and tapping "enable sound" silences the app.
+- **The toggle icon reflects `audible` (enabled *and* armed), not the stored
+  preference.** An enabled-but-locked toggle showing a live speaker is a lie.
+- **Continuous voices are torn down when muted**, not just gained to zero, so a
+  muted tab is not running oscillators nobody can hear.
+- Bus levels are ramped with `setTargetAtTime`, never assigned. Direct
+  assignment clicks.
+
+## The beam voice
+
+The in-game background is not ambience, it is the beam. `createBeamVoice` is
+driven by the real laser state the game already computes, so it changes every
+time a mirror moves because the beam on screen actually changed:
+`segments.length` sets intensity and whine pitch, the bounce count (visited
+cells holding a mirror) sets crackle density, `terminatedBy` sets character —
+`"flag"` focused and bright, `"obstacle"`/`"boundary"` duller and rougher — and
+the mistake state sours it. `GameScreen` computes the bounce count from
+`laserResult.visitedCells` and `getMirrorAt`.
+
+Note that `LaserResult["terminatedBy"]` still declares `"revisit"`, which
+`calculateLaserPath` never actually emits; the beam maps it to `null`.
+
+Both continuous voices, the cursor tone and the beam, sit far below the
+one-shots because sustained tone reads much louder than a transient at the same
+peak.
+
+## Judging the mix without hearing it
+
+`scripts/` has no audio tooling. Levels and texture are verified by rendering
+each voice through an `OfflineAudioContext` in headless Chrome against the real
+bus graph, because none of this can be assessed by reading code:
+
+- **Peak amplitude**, since `MIX` entries are *drive* levels and the resonant
+  filters add 10-20 dB, so the numbers cannot be compared to each other by eye.
+- **Envelope irregularity** (coefficient of variation of a short-window RMS
+  envelope, plus a median-detrended variant), which is what distinguishes real
+  sizzle from static noise. Calibrate the pass line against measured static and
+  modulated references rather than picking a constant.
+- **Crackle rate**, discrete transients per sounding second.
+- **Beam reactivity**, rendering each `setState` axis and asserting the output
+  actually differs — this is how an unwired parameter gets caught.
+
+**Seed `Math.random` before measuring.** Without it, click and sizzle voices
+measure differently every run; that produced a round of non-monotonic tuning
+where raising a voice's drive lowered its measured peak.
+
 ## Automation
 
 Three scheduled workflows keep the game running without intervention. Each

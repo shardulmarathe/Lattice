@@ -1,5 +1,7 @@
 "use client";
 
+import SoundToggle from "@/components/Sound/SoundToggle";
+
 interface HeaderProps {
   time: string;
   isPaused: boolean;
@@ -54,6 +56,10 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4">
+        {/* Icon, not a word: a sixth label wraps this row on a narrow phone. */}
+        <SoundToggle
+          className={`${navButtonClass} flex items-center justify-center`}
+        />
         <button onClick={onRules} className={navButtonClass}>
           RULES
         </button>
