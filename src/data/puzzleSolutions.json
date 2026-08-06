@@ -2745,5 +2745,52 @@
       "y": 7,
       "orientation": "/"
     }
+  ],
+  "53": [
+    {
+      "x": 3,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "orientation": "/"
+    }
   ]
 }
