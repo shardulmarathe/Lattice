@@ -2792,5 +2792,52 @@
       "y": 4,
       "orientation": "/"
     }
+  ],
+  "54": [
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "orientation": "/"
+    }
   ]
 }
