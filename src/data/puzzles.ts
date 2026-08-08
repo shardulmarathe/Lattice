@@ -52,6 +52,7 @@ import { PUZZLE_051 } from "./drafts/puzzle-051";
 import { PUZZLE_052 } from "./drafts/puzzle-052";
 import { PUZZLE_053 } from "./drafts/puzzle-053";
 import { PUZZLE_054 } from "./drafts/puzzle-054";
+import { PUZZLE_055 } from "./drafts/puzzle-055";
 import { getScheduledPuzzleId } from "./schedule";
 
 export const PUZZLE_001: Puzzle = {
@@ -129,6 +130,7 @@ export const PUZZLES: Puzzle[] = [
   PUZZLE_052,
   PUZZLE_053,
   PUZZLE_054,
+  PUZZLE_055,
 ];
 
 export { PUZZLE_002 } from "./drafts/puzzle-002";
@@ -183,6 +185,7 @@ export { PUZZLE_051 } from "./drafts/puzzle-051";
 export { PUZZLE_052 } from "./drafts/puzzle-052";
 export { PUZZLE_053 } from "./drafts/puzzle-053";
 export { PUZZLE_054 } from "./drafts/puzzle-054";
+export { PUZZLE_055 } from "./drafts/puzzle-055";
 
 export function getPuzzleById(id: number): Puzzle | undefined {
   return PUZZLES.find((p) => p.id === id);
