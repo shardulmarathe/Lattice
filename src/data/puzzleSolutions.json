@@ -3000,5 +3000,52 @@
       "y": 6,
       "orientation": "/"
     }
+  ],
+  "58": [
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "orientation": "/"
+    }
   ]
 }
