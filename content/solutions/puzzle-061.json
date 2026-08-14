@@ -1,0 +1,116 @@
+{
+  "id": 61,
+  "scheduledDate": "2026-08-21",
+  "code": "18527",
+  "gridSize": 7,
+  "seed": "2026-08-21:7:7",
+  "solutionMirrors": [
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "orientation": "\\"
+    }
+  ],
+  "mirrorCount": 20,
+  "mirrorDensity": 0.408,
+  "solverCap": 3,
+  "minMirrors": 9,
+  "pathLength": 49,
+  "obstacleInterference": 5,
+  "score": 28.66
+}
