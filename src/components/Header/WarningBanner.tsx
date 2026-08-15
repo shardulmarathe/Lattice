@@ -8,12 +8,15 @@ interface WarningBannerProps {
 }
 
 const warningClass =
-  "animate-warning-flash-glow text-center text-xl font-medium text-[#FF4444] md:text-[1.4rem]";
+  "animate-warning-flash-glow text-center text-[1.5rem] font-bold leading-snug text-[#FF4444] md:text-[1.85rem]";
 
 export default function WarningBanner({ message, inline = false }: WarningBannerProps) {
   if (inline) {
+    // A min-height slot, not a fixed one: two lines are reserved so a warning
+    // appearing never shifts the text under it, and the rare third line grows
+    // the slot instead of spilling onto that text.
     return (
-      <div className="relative h-10 w-full max-w-lg md:h-[3.75rem]">
+      <div className="flex min-h-[4.25rem] w-full max-w-lg items-start justify-center md:min-h-[5.25rem]">
         <AnimatePresence>
           {message && (
             <motion.p
@@ -21,7 +24,7 @@ export default function WarningBanner({ message, inline = false }: WarningBanner
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`absolute inset-x-0 top-0 ${warningClass}`}
+              className={`w-full ${warningClass}`}
             >
               {message}
             </motion.p>

@@ -53,6 +53,10 @@ export function getNumberTileStates(
   const collectedKeys = new Set<string>();
   const incorrectKeys = new Set<string>();
   let matchIndex = 0;
+  // The order is broken for good once a number arrives out of turn: the code is
+  // read off the beam in one pass, so every number the beam reaches after that
+  // is also out of turn, however well it matches the digit that was expected.
+  let orderBroken = false;
 
   for (const pos of visitedCells) {
     const cell = board[pos.y]?.[pos.x];
@@ -60,6 +64,7 @@ export function getNumberTileStates(
 
     const key = cellKey(pos.x, pos.y);
     if (
+      !orderBroken &&
       matchIndex < targetDigits.length &&
       cell.number === targetDigits[matchIndex]
     ) {
@@ -67,6 +72,7 @@ export function getNumberTileStates(
       incorrectKeys.delete(key);
       matchIndex++;
     } else {
+      orderBroken = true;
       incorrectKeys.add(key);
       collectedKeys.delete(key);
     }

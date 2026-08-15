@@ -412,7 +412,11 @@ export default function GameScreen() {
       if (isPaused || isComplete) return;
 
       const cell = board[y]?.[x];
-      if (cell?.type === "number" || cell?.type === "flag") {
+      if (
+        cell?.type === "number" ||
+        cell?.type === "flag" ||
+        cell?.type === "source"
+      ) {
         play("illegalTap");
         if (placementWarningTimerRef.current !== null) {
           window.clearTimeout(placementWarningTimerRef.current);
@@ -420,7 +424,9 @@ export default function GameScreen() {
         setPlacementWarning(
           cell.type === "number"
             ? "You cannot place a mirror on a number."
-            : "You cannot place a mirror on the flag."
+            : cell.type === "flag"
+              ? "You cannot place a mirror on the flag."
+              : "You cannot place a mirror on the laser source."
         );
         placementWarningTimerRef.current = window.setTimeout(() => {
           setPlacementWarning(null);
@@ -717,20 +723,22 @@ export default function GameScreen() {
         </div>
 
         <div
-          className={`flex shrink-0 flex-col items-center transition-opacity duration-500 ${contentDimClass}`}
+          className={`mt-3 flex shrink-0 flex-col items-center transition-opacity duration-500 md:mt-6 ${contentDimClass}`}
         >
-          <p className="mt-3 text-center text-xs tracking-wider text-white/70 md:mt-6 md:text-sm">
-            {isViewingSolve
-              ? "Your solution — mirrors locked."
-              : "Place a mirror on the laser to redirect it — tap again to rotate or remove it. Lasers can cross paths and pass through the source."}
-          </p>
-
+          {/* The warning sits above the how-to line: it is the urgent text, so
+              it reads first and never has to be hunted for below the prose. */}
           {!isViewingSolve && (
             <WarningBanner
               message={placementWarning ?? validation.warningMessage}
               inline
             />
           )}
+
+          <p className="text-center text-xs tracking-wider text-white/70 md:text-sm">
+            {isViewingSolve
+              ? "Your solution — mirrors locked."
+              : "Place a mirror on the laser to redirect it — tap again to rotate or remove it. Lasers can cross paths and pass through the source."}
+          </p>
         </div>
       </div>
 

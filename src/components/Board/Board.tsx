@@ -115,13 +115,14 @@ export default function Board({
 
   const handleCellClick = (cell: BoardCell, x: number, y: number) => {
     if (disabled) return;
-    // Empty/mirrors: place/cycle. Number/flag: forward so GameScreen can warn
-    // (illegal placement, display only, not a mistake).
+    // Empty/mirrors: place/cycle. Number/flag/source: forward so GameScreen can
+    // warn (illegal placement, display only, not a mistake).
     if (
       cell.type === "empty" ||
       cell.type === "mirror" ||
       cell.type === "number" ||
-      cell.type === "flag"
+      cell.type === "flag" ||
+      cell.type === "source"
     ) {
       onCellClick(x, y);
     }
@@ -157,7 +158,8 @@ export default function Board({
               (cell.type === "empty" ||
                 cell.type === "mirror" ||
                 cell.type === "number" ||
-                cell.type === "flag");
+                cell.type === "flag" ||
+                cell.type === "source");
             const mirrorOffset =
               cell.type === "mirror" && cell.mirror
                 ? getMirrorOffset(x, y, cell.mirror)
