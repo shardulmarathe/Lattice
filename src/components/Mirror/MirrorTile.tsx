@@ -7,7 +7,6 @@ import {
   getMirrorLineInCell,
   MIRROR_FACE_STROKE_RATIO,
   MIRROR_GLOW_STROKE_RATIO,
-  MIRROR_PAD_RATIO,
 } from "@/lib/laserPathUtils";
 
 interface MirrorTileProps {
@@ -25,7 +24,6 @@ export default function MirrorTile({
 }: MirrorTileProps) {
   const uid = useId().replace(/:/g, "");
   const { x1, y1, x2, y2 } = getMirrorLineInCell(size, orientation);
-  const pad = size * MIRROR_PAD_RATIO;
 
   const faceId = `mirror-face-${uid}`;
   const shineId = `mirror-shine-${uid}`;
@@ -75,16 +73,6 @@ export default function MirrorTile({
               <stop offset="100%" stopColor="rgba(255,255,255,0)" />
             </linearGradient>
           </defs>
-
-          <rect
-            x={pad * 0.5}
-            y={pad * 0.5}
-            width={size - pad}
-            height={size - pad}
-            fill="rgba(255,255,255,0.02)"
-            stroke="rgba(255,255,255,0.05)"
-            strokeWidth="0.5"
-          />
 
           <line
             x1={x1}

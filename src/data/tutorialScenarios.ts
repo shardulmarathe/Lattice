@@ -44,52 +44,31 @@ export const TUTORIAL_RESET_AT_MS = 4400;
 export const TAP_RIPPLE_MS = 450;
 
 /** Demo boards render this much larger on md+ screens. */
-export const TUTORIAL_DESKTOP_CELL_SCALE = 1.25;
+export const TUTORIAL_DESKTOP_CELL_SCALE = 1.3;
 
 /** The bespoke tap-to-place demo (no puzzle or laser, see MirrorCycleDemo). */
 export const MIRROR_CYCLE_SECTION = {
   title: "PLACE MIRRORS",
-  caption:
-    "Tap an empty square to place a mirror. Tap again to rotate it. Tap a third time to remove it.",
-  cellSize: 40,
-  gridSize: 2,
-  cell: { x: 1, y: 0 } as Position,
-  tapsAtMs: [600, 1800, 3000],
+  caption: "Tap to place, tap again to rotate, tap a third time to remove.",
+  cellSize: 37,
+  gridSize: 3,
   /** The mirror state changes this long after each tap ripple starts. */
   stateDelayMs: 120,
+  // Timed to the shared loop: early beat, corrective tap at 1300 (same as the
+  // other demos), then a third place during their phase-2 draw window.
+  taps: [
+    { atMs: 400, cell: { x: 1, y: 0 } as Position, orientation: "/" as const },
+    { atMs: 1300, cell: { x: 0, y: 2 } as Position, orientation: "\\" as const },
+    { atMs: 2500, cell: { x: 2, y: 1 } as Position, orientation: "/" as const },
+  ],
 } as const;
 
 export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
   {
-    id: "redirect",
-    title: "REDIRECT THE LASER",
-    caption: "Mirrors redirect the laser toward the target code.",
-    cellSize: 40,
-    puzzle: {
-      id: 9001,
-      code: "",
-      gridSize: 2,
-      obstacles: [],
-      source: { x: 0, y: 1, direction: "right" },
-      flag: { x: 0, y: 0 },
-      numbers: [],
-    },
-    phases: [
-      { startMs: 0, drawMs: 500, mirrors: [] },
-      {
-        startMs: 1250,
-        drawMs: 700,
-        mirrors: [{ x: 1, y: 1, orientation: "/" }],
-      },
-    ],
-    taps: [{ atMs: 1100, cell: { x: 1, y: 1 } }],
-  },
-  {
     id: "collect",
     title: "COLLECT THE CODE",
-    caption:
-      "Collect every number in the target code, in order. Hitting one out of order breaks the code — reroute to avoid it.",
-    cellSize: 32,
+    caption: "Numbers must be collected in order.",
+    cellSize: 37,
     puzzle: {
       id: 9002,
       code: "35",
@@ -120,44 +99,10 @@ export const TUTORIAL_SCENARIOS: TutorialScenario[] = [
     taps: [{ atMs: 1300, cell: { x: 1, y: 2 } }],
   },
   {
-    id: "advanced",
-    title: "LASER RULES",
-    caption:
-      "Laser paths can cross, revisit squares, and pass through the source.",
-    cellSize: 32,
-    puzzle: {
-      id: 9003,
-      code: "",
-      gridSize: 3,
-      obstacles: [],
-      source: { x: 0, y: 1, direction: "right" },
-      flag: { x: 0, y: 0 },
-      numbers: [],
-    },
-    phases: [
-      {
-        startMs: 0,
-        drawMs: 3000,
-        // Beam runs right along y=1, up the right edge, back left along the
-        // top, then down column x=1, crossing its own y=1 path at (1,1) -
-        // and finally up column x=0 through the source to the flag.
-        mirrors: [
-          { x: 2, y: 1, orientation: "/" },
-          { x: 2, y: 0, orientation: "\\" },
-          { x: 1, y: 0, orientation: "/" },
-          { x: 1, y: 2, orientation: "/" },
-          { x: 0, y: 2, orientation: "\\" },
-        ],
-        easing: "linear",
-        victory: true,
-      },
-    ],
-  },
-  {
     id: "finish",
     title: "REACH THE FLAG",
-    caption: "Reach the flag only after collecting every number.",
-    cellSize: 32,
+    caption: "Don't hit the flag until the code is complete.",
+    cellSize: 37,
     puzzle: {
       id: 9004,
       code: "7",

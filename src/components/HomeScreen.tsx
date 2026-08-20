@@ -29,8 +29,10 @@ export default function HomeScreen() {
     setMounted(true);
     router.prefetch("/play");
     router.prefetch("/complete");
+    router.prefetch("/tutorial");
     import("@/components/GameScreen");
     import("@/components/CompleteScreen");
+    import("@/components/TutorialScreen");
   }, [router]);
 
   return (
@@ -69,6 +71,19 @@ export default function HomeScreen() {
             whileTap={{ scale: 0.98 }}
             onClick={() => {
               play("uiTick");
+              router.push("/tutorial");
+            }}
+            className={buttonClass}
+          >
+            TUTORIAL
+          </motion.button>
+
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              play("uiTick");
               setShowPastGames(true);
             }}
             className={buttonClass}
@@ -88,17 +103,6 @@ export default function HomeScreen() {
           >
             RULES
           </motion.button>
-
-          <motion.a
-            href="https://forms.gle/SwrFyj3ww3GoJc4u7"
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }}
-            whileTap={{ scale: 0.98 }}
-            className={buttonClass}
-          >
-            FEEDBACK
-          </motion.a>
         </div>
       </motion.div>
 

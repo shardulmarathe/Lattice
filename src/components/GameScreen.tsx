@@ -38,6 +38,7 @@ import {
   play,
   playDigit,
   setBeamActive,
+  setBeamPresence,
   setBeamState,
 } from "@/lib/audio/engine";
 import { armVictoryResolve } from "@/lib/audio/victoryHandoff";
@@ -374,6 +375,7 @@ export default function GameScreen() {
   // in both, and cutting the sound at the moment of the solve made the laser
   // stop dead right where it should be most present.
   useEffect(() => {
+    setBeamPresence(1);
     setBeamActive(true);
   }, []);
 

@@ -1662,25 +1662,16 @@ const CURSOR_IDLE_HZ = 210;
 const CURSOR_FAST_HZ = 300;
 
 /**
- * How present the hum is with the pointer completely still. Not zero: a saber
- * idles. Low enough that leaving the tab open is not an imposition, and the
- * bed bus ducks it away entirely when the tab is hidden.
- */
-const CURSOR_IDLE_PRESENCE = 0.22;
-
-/**
- * The home page hum: the blade, idling, with the pointer as the hand holding
- * it. Moving swells it, brightens it and pitches it up; a still pointer settles
- * back to a soft idle rather than to silence.
- *
- * It is the same `buildHum` the in-game beam runs, at a different setting, so
- * the home page and the board are audibly the same instrument.
+ * The home page trail tone: silent at rest, then swells, brightens and pitches
+ * up with pointer speed. Same `buildHum` instrument as the in-game beam, at a
+ * different setting.
  */
 export function createCursorVoice({ ctx, bed }: Buses): CursorVoice {
   const now = ctx.currentTime;
 
   const rig = buildHum(ctx, { hz: CURSOR_IDLE_HZ, level: MIX.cursor });
-  rig.out.gain.value = CURSOR_IDLE_PRESENCE;
+  // Start silent; setSpeed opens it only when the pointer is moving.
+  rig.out.gain.value = NEAR_ZERO;
 
   // Arrival is a separate stage from presence on purpose. setSpeed runs every
   // animation frame and owns rig.out.gain outright; a fade-in scheduled on that
@@ -1702,12 +1693,8 @@ export function createCursorVoice({ ctx, bed }: Buses): CursorVoice {
 
       // Short time constants so the hum tracks the pointer rather than lagging
       // behind it, but not so short that it zippers. Squared, so slow drift
-      // stays near idle and only a real swing opens it up.
-      rig.out.gain.setTargetAtTime(
-        CURSOR_IDLE_PRESENCE + (1 - CURSOR_IDLE_PRESENCE) * s * s,
-        t,
-        0.05
-      );
+      // stays near silent and only a real swing opens it up.
+      rig.out.gain.setTargetAtTime(s * s, t, 0.05);
       rig.setPitch(CURSOR_IDLE_HZ + (CURSOR_FAST_HZ - CURSOR_IDLE_HZ) * s, t, 0.06);
       rig.setBrightness(0.14 + 0.66 * s, t, 0.05);
       rig.setChorus(0.3 + 0.4 * s, t, 0.08);
@@ -1735,6 +1722,8 @@ export interface BeamVoice {
     /** The board is in a wrong state. */
     mistake: boolean;
   }): void;
+  /** Multiplier on top of the path-driven presence. 1 = full in-game level. */
+  setPresence(level: number): void;
   stop(): void;
 }
 
@@ -1778,18 +1767,29 @@ export function createBeamVoice({ ctx, bed }: Buses): BeamVoice {
   rig.out.gain.value = 0.6;
 
   // Presence lives on rig.out and is owned by setState; arrival is this
-  // separate stage, so the two cannot fight over one param.
+  // separate stage, so the two cannot fight over one param. A third stage
+  // (screenPresence) lets /complete sit quieter without rewriting setState.
   const fade = ctx.createGain();
   fade.gain.setValueAtTime(NEAR_ZERO, now);
   // Fade in rather than appear, so arriving on the board is not a click.
   fade.gain.setTargetAtTime(1, now, 0.9);
-  rig.out.connect(fade).connect(bed);
+  const screenPresence = ctx.createGain();
+  screenPresence.gain.value = 1;
+  rig.out.connect(fade).connect(screenPresence).connect(bed);
 
   rig.start(now);
 
   let stopped = false;
 
   return {
+    setPresence(level: number) {
+      if (stopped) return;
+      screenPresence.gain.setTargetAtTime(
+        clamp(level, 0, 1),
+        ctx.currentTime,
+        0.25
+      );
+    },
     setState({ length, bounces, terminatedBy, mistake }) {
       if (stopped) return;
       const t = ctx.currentTime;

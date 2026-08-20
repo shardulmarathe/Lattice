@@ -36,6 +36,10 @@ interface BoardProps {
   maxBoardHeight?: number;
   /** One-shot ripple on the cell a hint just acted on; replays per key. */
   hintFlash?: { key: number; x: number; y: number } | null;
+  /** Red pulse guides (tutorial). Does not dim the rest of the board. */
+  pulseKeys?: Set<string> | null;
+  /** Override the default max cell size (px). */
+  maxCellSize?: number;
 }
 
 // The largest a cell should ever grow on a spacious desktop viewport. Below
@@ -47,9 +51,10 @@ const MAX_CELL_SIZE = 72;
 function computeCellSize(
   gridSize: number,
   maxBoardWidth?: number,
-  maxBoardHeight?: number
+  maxBoardHeight?: number,
+  maxCellSize: number = MAX_CELL_SIZE
 ): number {
-  if (typeof window === "undefined") return 56;
+  if (typeof window === "undefined") return Math.min(56, maxCellSize);
 
   // Fall back to a viewport-derived budget until the container has been
   // measured, so the first paint is already close to the final size.
@@ -68,7 +73,7 @@ function computeCellSize(
   // Never exceed the measured budget on either axis, that guarantees the
   // board fits with no overflow/clipping. Clamp to a sane minimum only to
   // avoid a zero-size board before measurement lands.
-  return Math.max(12, Math.min(MAX_CELL_SIZE, widthBased, heightBased));
+  return Math.max(12, Math.min(maxCellSize, widthBased, heightBased));
 }
 
 export default function Board({
@@ -84,22 +89,29 @@ export default function Board({
   maxBoardWidth,
   maxBoardHeight,
   hintFlash = null,
+  pulseKeys = null,
+  maxCellSize = MAX_CELL_SIZE,
 }: BoardProps) {
   const [cellSize, setCellSize] = useState(() =>
-    computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight)
+    computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight, maxCellSize)
   );
 
   useEffect(() => {
     const updateSize = () => {
       setCellSize(
-        computeCellSize(puzzle.gridSize, maxBoardWidth, maxBoardHeight)
+        computeCellSize(
+          puzzle.gridSize,
+          maxBoardWidth,
+          maxBoardHeight,
+          maxCellSize
+        )
       );
     };
 
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, [puzzle.gridSize, maxBoardWidth, maxBoardHeight]);
+  }, [puzzle.gridSize, maxBoardWidth, maxBoardHeight, maxCellSize]);
 
   const boardSize = puzzle.gridSize * cellSize;
   const mirrorContacts = useMemo(
@@ -164,13 +176,14 @@ export default function Board({
               cell.type === "mirror" && cell.mirror
                 ? getMirrorOffset(x, y, cell.mirror)
                 : null;
+            const isPulse = pulseKeys?.has(mirrorCellKey(x, y)) ?? false;
 
             return (
               <div
                 key={`${x}-${y}`}
                 className={`relative border border-[#222222] ${
                   isInteractive ? "cursor-pointer hover:bg-white/[0.03]" : ""
-                }`}
+                } ${isPulse ? "tutorial-pulse" : ""}`}
                 style={{ width: cellSize, height: cellSize }}
                 onClick={() => handleCellClick(cell, x, y)}
               >

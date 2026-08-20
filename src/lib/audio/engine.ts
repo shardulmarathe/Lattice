@@ -92,6 +92,8 @@ let beamState: BeamState = {
 };
 let cursorWanted = false;
 let beamWanted = false;
+/** Extra bed level for the beam. 1 on /play; quieter on /complete. */
+let beamPresence = 1;
 const ducks = new Set<DuckReason>();
 let visibilityBound = false;
 const armedListeners = new Set<(armed: boolean) => void>();
@@ -297,6 +299,7 @@ function syncContinuous(): void {
     // A voice rebuilt after unmute starts from nothing; replaying the last
     // state is what makes it come back as the beam currently on the board.
     beam.setState(beamState);
+    beam.setPresence(beamPresence);
   }
 }
 
@@ -339,4 +342,14 @@ export function setBeamActive(on: boolean): void {
 export function setBeamState(state: BeamState): void {
   beamState = state;
   beam?.setState(state);
+}
+
+/**
+ * Multiplier on the continuous beam. /play leaves this at 1; /complete turns
+ * it down so the solved path stays audible under the results without competing
+ * with the UI.
+ */
+export function setBeamPresence(level: number): void {
+  beamPresence = Math.max(0, Math.min(1, level));
+  beam?.setPresence(beamPresence);
 }

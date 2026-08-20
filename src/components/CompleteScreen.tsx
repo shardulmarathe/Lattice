@@ -23,6 +23,7 @@ import {
   play,
   playIn,
   setBeamActive,
+  setBeamPresence,
   setBeamState,
 } from "@/lib/audio/engine";
 import { calculateLaserPath, getMirrorAt } from "@/lib/laserEngine";
@@ -31,6 +32,9 @@ import { consumeVictoryResolve } from "@/lib/audio/victoryHandoff";
 const ACCENT = "#FF2D2D";
 /** Shared by the checkmark's spring delay and the victory resolve it lands on. */
 const CHECKMARK_DELAY_S = 0.3;
+
+const actionButtonClass =
+  "border border-white/20 px-5 py-3 text-center text-sm tracking-[0.2em] whitespace-nowrap text-white transition-colors hover:border-[#FF2D2D]/50";
 
 function StatTile({
   label,
@@ -170,6 +174,8 @@ export default function CompleteScreen() {
       terminatedBy: "flag",
       mistake: false,
     });
+    // Same beam voice as /play, but quieter so it sits under the results.
+    setBeamPresence(0.4);
     setBeamActive(true);
 
     // Part two of the victory sting, scheduled to land on the checkmark's
@@ -179,7 +185,13 @@ export default function CompleteScreen() {
     }
   }, [puzzle, router, playRoute, isPractice]);
 
-  useEffect(() => () => setBeamActive(false), []);
+  useEffect(
+    () => () => {
+      setBeamActive(false);
+      setBeamPresence(1);
+    },
+    []
+  );
 
   // Text the SHARE button copies to the clipboard (revealed only when pasted).
   const shareText = useMemo(
@@ -196,6 +208,11 @@ export default function CompleteScreen() {
   // share dots use, so screen and share can't disagree), or a nonzero counter.
   const efficiencyScore = getEfficiencyScore(puzzle.id, mirrorsUsed);
   const speedScore = getSpeedScore(puzzle, timeSeconds);
+
+  const handleHome = useCallback(() => {
+    play("uiTick");
+    router.push("/");
+  }, [router]);
 
   const handleSeeSolve = useCallback(() => {
     play("uiTick");
@@ -319,39 +336,88 @@ export default function CompleteScreen() {
           <span className="font-mono text-xl text-white">{countdown}</span>
         </div>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-4">
-          {/* Daily is one-time; only past puzzles show Replay. */}
-          {!isDaily && (
+        {isDaily ? (
+          <div className="mt-4 flex w-full flex-nowrap justify-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleHome}
+              className={actionButtonClass}
+            >
+              HOME
+            </motion.button>
+            {!isPractice && (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSeeSolve}
+                  className={actionButtonClass}
+                >
+                  SEE SOLVE
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleShare}
+                  className={actionButtonClass}
+                >
+                  {copied ? "COPIED!" : "SHARE"}
+                </motion.button>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 grid w-full grid-cols-2 gap-3">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleReplay}
-              className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+              className={actionButtonClass}
             >
               REPLAY
             </motion.button>
-          )}
-          {!isPractice && (
-            <>
+            {!isPractice ? (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSeeSolve}
-                className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+                className={actionButtonClass}
               >
                 SEE SOLVE
               </motion.button>
+            ) : (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleShare}
-                className="border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+                onClick={handleHome}
+                className={actionButtonClass}
               >
-                {copied ? "COPIED!" : "SHARE"}
+                HOME
               </motion.button>
-            </>
-          )}
-        </div>
+            )}
+            {!isPractice && (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleHome}
+                  className={actionButtonClass}
+                >
+                  HOME
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleShare}
+                  className={actionButtonClass}
+                >
+                  {copied ? "COPIED!" : "SHARE"}
+                </motion.button>
+              </>
+            )}
+          </div>
+        )}
       </motion.div>
     </main>
   );
