@@ -122,7 +122,9 @@ function main(): void {
 
     const generated = generatePuzzle(dateKey, hashes);
     if (!generated) {
-      console.error(`✗ ${dateKey}: generation failed after max attempts`);
+      console.error(
+        `✗ ${dateKey}: generation failed after max attempts (including salted seed rounds)`
+      );
       process.exitCode = 1;
       return;
     }

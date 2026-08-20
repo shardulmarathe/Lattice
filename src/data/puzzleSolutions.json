@@ -3396,5 +3396,99 @@
       "y": 4,
       "orientation": "/"
     }
+  ],
+  "66": [
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "orientation": "/"
+    }
+  ],
+  "67": [
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "orientation": "/"
+    }
   ]
 }

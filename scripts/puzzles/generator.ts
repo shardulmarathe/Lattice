@@ -72,6 +72,13 @@ export interface GeneratedPuzzle {
 }
 
 const ATTEMPTS_PER_SIZE = 150;
+/**
+ * When a date's primary seed space yields nothing (unlucky size order + params),
+ * retry with salted namespaces so the nightly job doesn't brick on one calendar
+ * day. Each round reshuffles size order and attempt seeds. Round 0 is the
+ * historical unsuffixed `dateKey` so already-shipped dailies stay reproducible.
+ */
+const MAX_SEED_ROUNDS = 8;
 
 const DIRECTION_VECTORS: Record<Direction, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
@@ -703,26 +710,32 @@ function harderFirst(a: GeneratedPuzzle, b: GeneratedPuzzle): number {
  * Best-of-N: within the first size that yields any valid board, keep going until
  * BEST_OF_N candidates clear the floor (or the attempt budget runs out), then ship
  * the hardest by proven exact min, not merely the first one over the floor.
+ *
+ * If every size fails in the primary seed space, salted rounds (`dateKey#rN`)
+ * reshuffle params so a single unlucky date can't stall the buffer forever.
  */
 export function generatePuzzle(
   dateKey: string,
   existingHashes: Set<string>
 ): GeneratedPuzzle | null {
   let totalAttempts = 0;
-  for (const gridSize of sizeOrderForDate(dateKey)) {
-    const passing: GeneratedPuzzle[] = [];
-    for (let a = 1; a <= ATTEMPTS_PER_SIZE; a++) {
-      totalAttempts++;
-      const seed = `${dateKey}:${gridSize}:${a}`;
-      const candidate = attempt(makeRng(seed), gridSize);
-      if (!candidate) continue;
-      if (existingHashes.has(puzzleHash(candidate.puzzle))) continue;
-      passing.push({ ...candidate, seed, attempts: totalAttempts });
-      if (passing.length >= BEST_OF_N) break;
-    }
-    if (passing.length > 0) {
-      passing.sort(harderFirst);
-      return passing[0];
+  for (let round = 0; round < MAX_SEED_ROUNDS; round++) {
+    const seedKey = round === 0 ? dateKey : `${dateKey}#r${round}`;
+    for (const gridSize of sizeOrderForDate(seedKey)) {
+      const passing: GeneratedPuzzle[] = [];
+      for (let a = 1; a <= ATTEMPTS_PER_SIZE; a++) {
+        totalAttempts++;
+        const seed = `${seedKey}:${gridSize}:${a}`;
+        const candidate = attempt(makeRng(seed), gridSize);
+        if (!candidate) continue;
+        if (existingHashes.has(puzzleHash(candidate.puzzle))) continue;
+        passing.push({ ...candidate, seed, attempts: totalAttempts });
+        if (passing.length >= BEST_OF_N) break;
+      }
+      if (passing.length > 0) {
+        passing.sort(harderFirst);
+        return passing[0];
+      }
     }
   }
   return null;

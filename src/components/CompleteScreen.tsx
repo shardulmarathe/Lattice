@@ -34,7 +34,7 @@ const ACCENT = "#FF2D2D";
 const CHECKMARK_DELAY_S = 0.3;
 
 const actionButtonClass =
-  "border border-white/20 px-5 py-3 text-center text-sm tracking-[0.2em] whitespace-nowrap text-white transition-colors hover:border-[#FF2D2D]/50";
+  "border border-white/20 px-4 py-3 text-center text-sm tracking-[0.2em] whitespace-nowrap text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-5";
 
 function StatTile({
   label,
@@ -55,18 +55,18 @@ function StatTile({
     // (e.g. MIRRORS USED with MIRROR EFFICIENCY). The value fills the remaining
     // space and centers in it, so a no-detail tile's number sits in the same
     // centered spot while a detail tile adds its line at the bottom.
-    <div className="flex flex-col items-center border border-white/10 px-3 py-4">
-      <span className="flex min-h-[1.5rem] w-full items-end justify-center text-center text-[0.68rem] font-medium leading-tight tracking-[0.06em] text-white/45">
+    <div className="flex flex-col items-center border border-white/10 px-2 py-2.5 sm:px-3 sm:py-4">
+      <span className="flex min-h-[1.15rem] w-full items-end justify-center text-center text-[0.62rem] font-medium leading-tight tracking-[0.06em] text-white/45 sm:min-h-[1.5rem] sm:text-[0.68rem]">
         {label}
       </span>
       <span
-        className={`flex flex-1 items-center justify-center py-2 font-mono leading-none ${big ? "text-[2.6rem]" : "text-3xl"}`}
+        className={`flex flex-1 items-center justify-center py-1 font-mono leading-none sm:py-2 ${big ? "text-[2.1rem] sm:text-[2.6rem]" : "text-[1.65rem] sm:text-3xl"}`}
         style={{ color: accentValue ? ACCENT : "#ffffff" }}
       >
         {value}
       </span>
       {hasDetail && (
-        <span className="flex min-h-[1.5rem] w-full items-start justify-center text-center text-[0.72rem] leading-tight tracking-wide text-white/50">
+        <span className="flex min-h-[1.15rem] w-full items-start justify-center text-center text-[0.65rem] leading-tight tracking-wide text-white/50 sm:min-h-[1.5rem] sm:text-[0.72rem]">
         {detail ?? " "}
         </span>
       )}
@@ -245,22 +245,22 @@ export default function CompleteScreen() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(2rem,env(safe-area-inset-bottom))]">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-[max(2rem,env(safe-area-inset-bottom))]">
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-6 py-8 sm:px-12 sm:py-10"
+        className="flex w-full max-w-md flex-col items-center gap-3.5 border border-white/10 bg-black px-5 py-5 sm:gap-6 sm:px-12 sm:py-10"
       >
-        <h2 className="text-[clamp(1.35rem,6.5vw,1.875rem)] tracking-[0.3em] text-white">
+        <h2 className="text-[clamp(1.15rem,5.5vw,1.875rem)] tracking-[0.3em] text-white">
           LATTICE #{puzzle.id.toString().padStart(3, "0")}
         </h2>
 
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-xs tracking-[0.2em] text-white/40">
+        <div className="flex flex-col items-center gap-1 sm:gap-2">
+          <span className="text-[0.65rem] tracking-[0.2em] text-white/40 sm:text-xs">
             {isPractice ? "PRACTICE TIME" : "COMPLETION TIME"}
           </span>
-          <span className="font-mono text-4xl text-white md:text-5xl">
+          <span className="font-mono text-3xl text-white sm:text-4xl md:text-5xl">
             {formatTime(timeSeconds)}
           </span>
         </div>
@@ -273,11 +273,10 @@ export default function CompleteScreen() {
             type: "spring",
             stiffness: 200,
           }}
-          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#FF2D2D]"
+          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#FF2D2D] sm:h-16 sm:w-16"
         >
           <svg
-            width="32"
-            height="32"
+            className="h-6 w-6 sm:h-8 sm:w-8"
             viewBox="0 0 24 24"
             fill="none"
             stroke="#FF2D2D"
@@ -290,7 +289,7 @@ export default function CompleteScreen() {
         </motion.div>
 
         {/* Top row: performance meters. Bottom row: counters that cost you. */}
-        <div className="grid w-full grid-cols-2 gap-3">
+        <div className="grid w-full grid-cols-2 gap-2 sm:gap-3">
           <StatTile
             label="MIRROR EFFICIENCY"
             value={efficiency !== null ? `${efficiency}%` : "—"}
@@ -329,15 +328,15 @@ export default function CompleteScreen() {
           />
         </div>
 
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="text-xs tracking-[0.2em] text-white/40">
+        <div className="flex flex-col items-center gap-0.5 sm:gap-1.5">
+          <span className="text-[0.65rem] tracking-[0.2em] text-white/40 sm:text-xs">
             NEXT DAILY PUZZLE
           </span>
-          <span className="font-mono text-xl text-white">{countdown}</span>
+          <span className="font-mono text-lg text-white sm:text-xl">{countdown}</span>
         </div>
 
         {isDaily ? (
-          <div className="mt-4 flex w-full flex-nowrap justify-center gap-3">
+          <div className="mt-1 flex w-full flex-nowrap justify-center gap-2 sm:mt-4 sm:gap-3">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -368,7 +367,7 @@ export default function CompleteScreen() {
             )}
           </div>
         ) : (
-          <div className="mt-4 grid w-full grid-cols-2 gap-3">
+          <div className="mt-1 grid w-full grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}

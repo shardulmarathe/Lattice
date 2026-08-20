@@ -1,0 +1,71 @@
+{
+  "id": 66,
+  "scheduledDate": "2026-08-26",
+  "code": "20160",
+  "gridSize": 5,
+  "seed": "2026-08-26#r1:5:54",
+  "solutionMirrors": [
+    {
+      "x": 3,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    }
+  ],
+  "mirrorCount": 11,
+  "mirrorDensity": 0.44,
+  "solverCap": 6,
+  "minMirrors": 9,
+  "pathLength": 22,
+  "obstacleInterference": 7,
+  "score": 39.01
+}

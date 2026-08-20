@@ -190,5 +190,11 @@
   },
   "65": {
     "minMirrors": 9
+  },
+  "66": {
+    "minMirrors": 9
+  },
+  "67": {
+    "minMirrors": 9
   }
 }

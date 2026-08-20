@@ -45,6 +45,8 @@ import {
 const puzzle = TUTORIAL_PUZZLE;
 const BOARD_REGION_GAP_PX = 24;
 const TUTORIAL_MAX_CELL_SIZE = 96;
+/** Beat after the laser hits the flag before the ready overlay (same as play). */
+const COMPLETION_NAV_DELAY_MS = 350;
 /** Shared by the checkmark spring delay and the victory resolve it lands on. */
 const CHECKMARK_DELAY_S = 0.3;
 
@@ -80,6 +82,7 @@ export default function TutorialScreen() {
   const boardRegionRef = useRef<HTMLDivElement>(null);
   const clusterHeaderRef = useRef<HTMLDivElement>(null);
   const placementWarningTimerRef = useRef<number | null>(null);
+  const completionTimerRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
 
   const step = TUTORIAL_STEPS[stepIndex];
@@ -253,10 +256,18 @@ export default function TutorialScreen() {
 
     if (isLastStep) {
       markTutorialSeen();
+      // Same beat as play: charge on the board while the victory laser shows,
+      // then reveal the ready card so resolve can land on the checkmark.
       play("victoryCharge");
       armVictoryResolve();
-      setShowReady(true);
-      advancingRef.current = false;
+      if (completionTimerRef.current !== null) {
+        window.clearTimeout(completionTimerRef.current);
+      }
+      completionTimerRef.current = window.setTimeout(() => {
+        completionTimerRef.current = null;
+        setShowReady(true);
+        advancingRef.current = false;
+      }, COMPLETION_NAV_DELAY_MS);
       return;
     }
 
@@ -332,6 +343,9 @@ export default function TutorialScreen() {
     return () => {
       if (placementWarningTimerRef.current !== null) {
         window.clearTimeout(placementWarningTimerRef.current);
+      }
+      if (completionTimerRef.current !== null) {
+        window.clearTimeout(completionTimerRef.current);
       }
     };
   }, []);
@@ -669,14 +683,14 @@ export default function TutorialScreen() {
       )}
 
       {showReady && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(2rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-[max(2rem,env(safe-area-inset-bottom))]">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-6 py-8 sm:px-12 sm:py-10"
+            className="flex w-full max-w-md flex-col items-center gap-3.5 border border-white/10 bg-black px-5 py-5 sm:gap-6 sm:px-12 sm:py-10"
           >
-            <h2 className="text-[clamp(1.35rem,6.5vw,1.875rem)] tracking-[0.3em] text-white">
+            <h2 className="text-[clamp(1.15rem,5.5vw,1.875rem)] tracking-[0.3em] text-white">
               TUTORIAL
             </h2>
 
@@ -688,11 +702,10 @@ export default function TutorialScreen() {
                 type: "spring",
                 stiffness: 200,
               }}
-              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#FF2D2D]"
+              className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#FF2D2D] sm:h-16 sm:w-16"
             >
               <svg
-                width="32"
-                height="32"
+                className="h-6 w-6 sm:h-8 sm:w-8"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="#FF2D2D"
@@ -704,7 +717,7 @@ export default function TutorialScreen() {
               </svg>
             </motion.div>
 
-            <div className="mt-2 flex w-full flex-col gap-3">
+            <div className="mt-1 flex w-full flex-col gap-2 sm:mt-2 sm:gap-3">
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}
@@ -713,7 +726,7 @@ export default function TutorialScreen() {
                   play("uiTick");
                   router.push("/play");
                 }}
-                className="w-full border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-6"
               >
                 SOLVE TODAY&apos;S PUZZLE
               </motion.button>
@@ -725,7 +738,7 @@ export default function TutorialScreen() {
                   play("uiTick");
                   router.push("/");
                 }}
-                className="w-full border border-white/20 px-6 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-6"
               >
                 BACK TO HOME
               </motion.button>
