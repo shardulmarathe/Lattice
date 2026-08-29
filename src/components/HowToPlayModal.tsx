@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   MIRROR_CYCLE_SECTION,
@@ -35,7 +35,7 @@ function DemoRow({
     <div className="flex items-center gap-4">
       {children}
       <div className="min-w-0 flex-1">
-        <p className="mb-1.5 text-xs uppercase tracking-[0.25em] text-white">
+        <p className="mb-1.5 text-xs uppercase tracking-[0.2em] text-white">
           {title}
         </p>
         <p className="text-[13px] leading-snug text-white/70">{caption}</p>
@@ -52,6 +52,17 @@ export default function HowToPlayModal({
   overlayOnGame = false,
   dismissOnBackdrop = true,
 }: HowToPlayModalProps) {
+  // Escape closes, which no modal in this app used to support. Gated on
+  // dismissOnBackdrop so a forced first-run reading cannot be keyed past.
+  useEffect(() => {
+    if (!isOpen || !dismissOnBackdrop) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, dismissOnBackdrop, onClose]);
+
   const handleConfirm = () => {
     play("uiTick");
     onConfirm?.();
@@ -72,19 +83,23 @@ export default function HowToPlayModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          // Over the board the scrim stays translucent on purpose: you need
+          // to see the puzzle you are reading the rules for. Over the menu it
+          // is opaque, because a partly-transparent black scrim on a black page
+          // only let the wordmark bleed through.
           className={`fixed inset-0 z-[100] flex items-center justify-center px-3 py-3 ${
-            overlayOnGame
-              ? "bg-black/45 backdrop-blur-[2px]"
-              : "bg-black/80 backdrop-blur-sm"
+            overlayOnGame ? "bg-black/45 backdrop-blur-[2px]" : "bg-black"
           }`}
           onClick={handleBackdropClick}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3 }}
-            className="flex w-full max-w-[30rem] flex-col border border-white/10 bg-black p-7 shadow-2xl md:p-8"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.25 }}
+            // No shadow: a drop shadow under a black panel on a black page
+            // renders nothing.
+            className="flex w-full max-w-[30rem] flex-col border border-white/15 bg-black p-7 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
@@ -121,14 +136,12 @@ export default function HowToPlayModal({
               </p>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={handleConfirm}
-              className="mt-8 w-full shrink-0 border border-white/20 py-3 text-[15px] tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50"
+              className="mt-8 w-full shrink-0 border border-white/20 py-3 text-[15px] tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5"
             >
               {confirmLabel}
-            </motion.button>
+            </button>
           </motion.div>
         </motion.div>
       )}

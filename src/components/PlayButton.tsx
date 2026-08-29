@@ -199,12 +199,11 @@ export default function PlayButton() {
     <div className="relative inline-block">
       <motion.button
         ref={buttonRef}
+        // Glow on hover, but no scale. The laser bloom is diegetic; a 2%
+        // nudge applied to every button in the app was not.
         whileHover={
-          isNavigating
-            ? undefined
-            : { scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }
+          isNavigating ? undefined : { boxShadow: "0 0 30px rgba(255,45,45,0.4)" }
         }
-        whileTap={isNavigating ? undefined : { scale: 0.98 }}
         onMouseEnter={handlePrefetch}
         onFocus={handlePrefetch}
         onClick={() => void handlePlay()}

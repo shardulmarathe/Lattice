@@ -118,12 +118,11 @@ export default function LaserTraceButton({
       <motion.button
         ref={buttonRef}
         type="button"
+        // Glow on hover, but no scale. The laser bloom is diegetic; a 2%
+        // nudge applied to every button in the app was not.
         whileHover={
-          isTracing
-            ? undefined
-            : { scale: 1.02, boxShadow: "0 0 30px rgba(255,45,45,0.4)" }
+          isTracing ? undefined : { boxShadow: "0 0 30px rgba(255,45,45,0.4)" }
         }
-        whileTap={isTracing ? undefined : { scale: 0.98 }}
         onClick={() => void handleClick()}
         disabled={isTracing}
         className={`${className} ${isTracing ? "border-transparent text-white/80" : ""}`}

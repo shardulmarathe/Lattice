@@ -604,7 +604,7 @@ export default function TutorialScreen() {
             />
 
             <div className="flex max-w-lg flex-col items-center gap-1.5 px-2">
-              <p className="text-center text-[0.65rem] tracking-[0.28em] text-white/45">
+              <p className="text-center text-[0.65rem] tracking-[0.2em] text-white/55">
                 TUTORIAL · {Math.min(stepIndex + 1, TUTORIAL_STEPS.length)}/
                 {TUTORIAL_STEPS.length}
               </p>
@@ -649,34 +649,32 @@ export default function TutorialScreen() {
       </div>
 
       {showSkipConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black px-4">
           <div className="w-full max-w-sm border border-white/10 bg-black p-6">
             <p className="mb-6 text-center text-sm leading-relaxed tracking-wide text-white/80">
               Skip the whole tutorial and return home?
             </p>
             <div className="flex flex-col gap-2">
-              <motion.button
+              <button
                 type="button"
-                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   play("uiTick");
                   router.push("/");
                 }}
-                className="w-full border border-white/20 py-2.5 text-sm tracking-[0.2em] text-white hover:border-[#FF2D2D]/50"
+                className="w-full border border-white/20 py-2.5 text-sm tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5"
               >
                 SKIP TUTORIAL
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
-                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   play("uiTick");
                   setShowSkipConfirm(false);
                 }}
-                className="w-full border border-transparent py-2.5 text-sm tracking-[0.2em] text-white/60 hover:text-white"
+                className="w-full border border-transparent py-2.5 text-sm tracking-[0.2em] text-white/60 transition-colors hover:text-white"
               >
                 KEEP GOING
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
@@ -718,30 +716,26 @@ export default function TutorialScreen() {
             </motion.div>
 
             <div className="mt-1 flex w-full flex-col gap-2 sm:mt-2 sm:gap-3">
-              <motion.button
+              <button
                 type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   play("uiTick");
                   router.push("/play");
                 }}
-                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-6"
+                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5 sm:px-6"
               >
                 SOLVE TODAY&apos;S PUZZLE
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   play("uiTick");
                   router.push("/");
                 }}
-                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-6"
+                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5 sm:px-6"
               >
                 BACK TO HOME
-              </motion.button>
+              </button>
             </div>
           </motion.div>
         </div>
