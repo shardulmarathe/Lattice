@@ -48,7 +48,13 @@ export default function HomeScreen() {
         className="relative z-10 flex flex-col items-center gap-[clamp(2rem,6vh,3.5rem)]"
       >
         <motion.h1
-          className="max-w-full text-[clamp(2rem,min(9vw,13vh),6.5rem)] font-light tracking-[0.16em] text-white -mr-[0.16em] sm:tracking-[0.3em] sm:-mr-[0.3em] md:tracking-[0.4em] md:-mr-[0.4em]"
+          // No negative right margin to "cancel" the trailing letter-space.
+          // Chrome already trims it from the element's intrinsic width, so the
+          // margin subtracted width that was never there and pushed the
+          // wordmark right by a full tracking unit: measured +11.8px, +22.1px
+          // and +29.5px at the three tracking steps. Removing it centres the
+          // glyphs exactly (0.0px) at all three.
+          className="max-w-full text-[clamp(2rem,min(9vw,13vh),6.5rem)] font-light tracking-[0.16em] text-white sm:tracking-[0.3em] md:tracking-[0.4em]"
           initial={false}
           animate={mounted ? { opacity: 1 } : false}
           transition={{ duration: 1.2, ease: "easeOut" }}
