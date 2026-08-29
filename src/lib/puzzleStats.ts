@@ -33,29 +33,6 @@ export function getMirrorEfficiency(
   return Math.round((minMirrors / mirrorsUsed) * 100);
 }
 
-// Speed pacing, derived entirely from a puzzle's minimum mirror count. The
-// "fastest" floor is what a speed-runner who already knows the solution needs
-// to physically place the mirrors: a small orient/read base plus ~1s per mirror.
-// Calibrated to the one real record we have (#11: 9 mirrors solved in 12s → 3 +
-// 9·1 = 12). It scales with mirror count, a robust difficulty signal that
-// works even from a lower bound (minMirrorsAtLeast) until the exact min is
-// proven.
-const FASTEST_BASE_SECONDS = 3;
-const FASTEST_SECONDS_PER_MIRROR = 1.0;
-
-/**
- * Fastest achievable solve time (seconds), the record floor a puzzle is paced
- * against. Uses the exact minimum when known, else the proven lower bound, else
- * grid size as a last-resort proxy.
- */
-export function getFastestSeconds(puzzle: Puzzle): number {
-  const { minMirrors, minMirrorsAtLeast } = getPuzzleStats(puzzle.id);
-  const mirrorRef = minMirrors ?? minMirrorsAtLeast ?? puzzle.gridSize;
-  return Math.round(
-    FASTEST_BASE_SECONDS + FASTEST_SECONDS_PER_MIRROR * mirrorRef
-  );
-}
-
 // ---------------------------------------------------------------------------
 // 1–5 meter scores, the shared scorecard basis for the completion screen and
 // the share text (Efficiency / Speed / Accuracy, five dots each).
@@ -86,11 +63,10 @@ export function getEfficiencyScore(
 /**
  * Speed meter. Banded on seconds-per-required-mirror (time ÷ the puzzle's
  * proven minimum, after a small orient/read base), so pacing scales with
- * difficulty automatically. Unlike the record floor (getFastestSeconds, ~1
- * s/mirror with the solution memorized), these bands describe live solves that
- * include thinking time:
+ * difficulty automatically. The bands describe live solves that include
+ * thinking time, not memorised speed-runs:
  *   5: ≤2 s/mirror (expert) · 4: ≤4 (brisk) · 3: ≤8 (solid) · 2: ≤16 · 1: slower
- * Falls back from exact min → proven lower bound → grid size, like the floor.
+ * Falls back from exact min → proven lower bound → grid size.
  */
 const SPEED_METER_BASE_SECONDS = 3;
 const SPEED_METER_BANDS_SECONDS_PER_MIRROR: [number, number, number, number] = [
@@ -119,22 +95,4 @@ export function getAccuracyScore(wrongNumberHits: number): MeterScore {
   if (wrongNumberHits <= 6) return 3;
   if (wrongNumberHits <= 8) return 2;
   return 1;
-}
-
-export type SpeedLabel = "Blazing" | "Fast" | "Normal" | "Slowish" | "Slow";
-
-const SPEED_LABELS: Record<MeterScore, SpeedLabel> = {
-  5: "Blazing",
-  4: "Fast",
-  3: "Normal",
-  2: "Slowish",
-  1: "Slow",
-};
-
-/**
- * Player-facing pace word, mapped 1:1 from the five speed-meter scores so the
- * label and the dots can never disagree.
- */
-export function getSpeedLabel(puzzle: Puzzle, timeSeconds: number): SpeedLabel {
-  return SPEED_LABELS[getSpeedScore(puzzle, timeSeconds)];
 }

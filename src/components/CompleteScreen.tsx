@@ -10,12 +10,11 @@ import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
 import {
+  getAccuracyScore,
   getEfficiencyScore,
-  getMirrorEfficiency,
   getPuzzleStats,
-  getFastestSeconds,
-  getSpeedLabel,
   getSpeedScore,
+  type MeterScore,
 } from "@/lib/puzzleStats";
 import { formatTime } from "@/lib/validation";
 import { useDailyRollover } from "@/hooks/useDailyRollover";
@@ -29,53 +28,55 @@ import {
 import { calculateLaserPath, getMirrorAt } from "@/lib/laserEngine";
 import { consumeVictoryResolve } from "@/lib/audio/victoryHandoff";
 
-const ACCENT = "#FF2D2D";
-/** Shared by the checkmark's spring delay and the victory resolve it lands on. */
-const CHECKMARK_DELAY_S = 0.3;
+/** Spring delay on the scorecard reveal, which the victory resolve lands on. */
+const SCORECARD_DELAY_S = 0.3;
 
-const actionButtonClass =
-  "border border-white/20 px-4 py-3 text-center text-sm tracking-[0.2em] whitespace-nowrap text-white transition-colors hover:border-[#FF2D2D]/50 sm:px-5";
+/**
+ * Secondary text on black. white/50 clears WCAG AA (5.28:1) while still reading
+ * as recessive, so labels stay dim without dropping under the threshold the way
+ * the old white/40 (3.66:1) and white/45 (4.42:1) did.
+ */
+const LABEL_CLASS = "text-xs text-white/55";
+const DETAIL_CLASS = "text-xs text-white/50";
 
-function StatTile({
+/**
+ * One 1-5 meter: label, five dots, a short detail. Same three meters and the
+ * same scores as the share text (see getShareText), so the screen and the
+ * clipboard can never tell different stories.
+ *
+ * Dots are white, never red. Red is the laser in this game, not a verdict, so a
+ * weak score reads as unlit rather than as an error.
+ */
+function Meter({
   label,
-  value,
+  score,
   detail,
-  accentValue = false,
-  big = false,
 }: {
   label: string;
-  value: string | number;
-  detail?: string | null;
-  accentValue?: boolean;
-  big?: boolean;
+  score: MeterScore;
+  detail: string;
 }) {
-  const hasDetail = detail !== undefined && detail !== null && detail !== "";
   return (
-    // Label is always pinned to the top so labels line up across every tile
-    // (e.g. MIRRORS USED with MIRROR EFFICIENCY). The value fills the remaining
-    // space and centers in it, so a no-detail tile's number sits in the same
-    // centered spot while a detail tile adds its line at the bottom.
-    <div className="flex flex-col items-center border border-white/10 px-2 py-2.5 sm:px-3 sm:py-4">
-      <span className="flex min-h-[1.15rem] w-full items-end justify-center text-center text-[0.62rem] font-medium leading-tight tracking-[0.06em] text-white/45 sm:min-h-[1.5rem] sm:text-[0.68rem]">
-        {label}
+    <div className="flex w-full items-center gap-3">
+      <span className={`w-[5.25rem] shrink-0 ${LABEL_CLASS}`}>{label}</span>
+      <span className="flex shrink-0 items-center gap-1" aria-hidden>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <span
+            key={i}
+            className={`h-2 w-2 rounded-full ${
+              i < score ? "bg-white" : "bg-white/15"
+            }`}
+          />
+        ))}
       </span>
-      <span
-        className={`flex flex-1 items-center justify-center py-1 font-mono leading-none sm:py-2 ${big ? "text-[2.1rem] sm:text-[2.6rem]" : "text-[1.65rem] sm:text-3xl"}`}
-        style={{ color: accentValue ? ACCENT : "#ffffff" }}
-      >
-        {value}
-      </span>
-      {hasDetail && (
-        <span className="flex min-h-[1.15rem] w-full items-start justify-center text-center text-[0.65rem] leading-tight tracking-wide text-white/50 sm:min-h-[1.5rem] sm:text-[0.72rem]">
-        {detail ?? " "}
-        </span>
-      )}
+      <span className="sr-only">{`${score} out of 5`}</span>
+      <span className={`min-w-0 ${DETAIL_CLASS}`}>{detail}</span>
     </div>
   );
 }
 
 /** Live HH:MM:SS until local midnight, when the next daily puzzle unlocks. */
-function useNextPuzzleCountdown(): string {
+function useNextPuzzleCountdown(enabled: boolean): string {
   const compute = () => {
     const now = new Date();
     const midnight = new Date(now);
@@ -94,9 +95,10 @@ function useNextPuzzleCountdown(): string {
   const [countdown, setCountdown] = useState(compute);
 
   useEffect(() => {
+    if (!enabled) return;
     const interval = setInterval(() => setCountdown(compute()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 
   return countdown;
 }
@@ -114,6 +116,10 @@ function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
   }
 
   return getPuzzleForDate(new Date()) ?? PUZZLE_001;
+}
+
+function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 export default function CompleteScreen() {
@@ -141,7 +147,9 @@ export default function CompleteScreen() {
   const playRoute = isDaily ? "/play" : `/play?puzzle=${puzzle.id}`;
   const replayRoute = `${playRoute}${playRoute.includes("?") ? "&" : "?"}replay=1`;
 
-  const countdown = useNextPuzzleCountdown();
+  // Only today's solve leads into tomorrow's puzzle, so an archive completion
+  // has nothing to count down to.
+  const countdown = useNextPuzzleCountdown(isDaily);
   const [copied, setCopied] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
@@ -178,10 +186,10 @@ export default function CompleteScreen() {
     setBeamPresence(0.4);
     setBeamActive(true);
 
-    // Part two of the victory sting, scheduled to land on the checkmark's
+    // Part two of the victory sting, scheduled to land on the scorecard's
     // spring below. Only a solve arms it, so revisiting this screen is silent.
     if (consumeVictoryResolve()) {
-      playIn("victoryResolve", CHECKMARK_DELAY_S);
+      playIn("victoryResolve", SCORECARD_DELAY_S);
     }
   }, [puzzle, router, playRoute, isPractice]);
 
@@ -200,14 +208,21 @@ export default function CompleteScreen() {
     [puzzle.id, timeSeconds, mirrorsUsed, wrongNumberHits, hintsUsed]
   );
 
-  const efficiency = getMirrorEfficiency(puzzle.id, mirrorsUsed);
-  const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
-  const speedLabel = getSpeedLabel(puzzle, timeSeconds);
-  const fastestSeconds = getFastestSeconds(puzzle);
-  // Red = bad, everywhere on the grid: a weak meter score (same 1–5 scores the
-  // share dots use, so screen and share can't disagree), or a nonzero counter.
+  // Same three scores the share text prints, from the same source, so the dots
+  // on screen and the dots in the paste always agree.
   const efficiencyScore = getEfficiencyScore(puzzle.id, mirrorsUsed);
   const speedScore = getSpeedScore(puzzle, timeSeconds);
+  const accuracyScore = getAccuracyScore(wrongNumberHits);
+
+  // Short screen-side wording for the same figures the share spells out in
+  // full. Both read minMirrors from getPuzzleStats, so they cannot drift.
+  const minMirrors = getPuzzleStats(puzzle.id).minMirrors;
+  const efficiencyDetail =
+    minMirrors === undefined
+      ? pluralize(mirrorsUsed, "mirror")
+      : mirrorsUsed - minMirrors <= 0
+        ? "optimal"
+        : `+${mirrorsUsed - minMirrors} over min`;
 
   const handleHome = useCallback(() => {
     play("uiTick");
@@ -244,179 +259,112 @@ export default function CompleteScreen() {
     return <main className="min-h-screen bg-black" />;
   }
 
+  // Grid size and hints ride the meta line exactly as they ride the share text's
+  // header, rather than taking a meter of their own.
+  const meta = [
+    `${puzzle.gridSize}×${puzzle.gridSize}`,
+    hintsUsed > 0 ? pluralize(hintsUsed, "hint") : null,
+    isPractice ? "practice" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-[max(2rem,env(safe-area-inset-bottom))]">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex w-full max-w-md flex-col items-center gap-3.5 border border-white/10 bg-black px-5 py-5 sm:gap-6 sm:px-12 sm:py-10"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-5 py-8 sm:px-12 sm:py-10"
       >
-        <h2 className="text-[clamp(1.15rem,5.5vw,1.875rem)] tracking-[0.3em] text-white">
-          LATTICE #{puzzle.id.toString().padStart(3, "0")}
-        </h2>
+        <div className="flex flex-col items-center gap-1.5">
+          <h2 className="text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
+            LATTICE #{puzzle.id.toString().padStart(3, "0")}
+          </h2>
+          <span className={DETAIL_CLASS}>{meta}</span>
+        </div>
 
-        <div className="flex flex-col items-center gap-1 sm:gap-2">
-          <span className="text-[0.65rem] tracking-[0.2em] text-white/40 sm:text-xs">
-            {isPractice ? "PRACTICE TIME" : "COMPLETION TIME"}
-          </span>
-          <span className="font-mono text-3xl text-white sm:text-4xl md:text-5xl">
+        <div className="flex flex-col items-center gap-1">
+          <span className={LABEL_CLASS}>Completion time</span>
+          <span className="font-mono text-4xl text-white sm:text-5xl">
             {formatTime(timeSeconds)}
           </span>
         </div>
 
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{
-            delay: CHECKMARK_DELAY_S,
-            type: "spring",
-            stiffness: 200,
-          }}
-          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#FF2D2D] sm:h-16 sm:w-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: SCORECARD_DELAY_S, duration: 0.4 }}
+          // Centred as a group, not stretched: the rows are a fixed-width
+          // block so their dot columns line up, and the block sits on the same
+          // centre line as the heading and the time.
+          className="mx-auto flex w-fit flex-col gap-2.5"
         >
-          <svg
-            className="h-6 w-6 sm:h-8 sm:w-8"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#FF2D2D"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
-        </motion.div>
-
-        {/* Top row: performance meters. Bottom row: counters that cost you. */}
-        <div className="grid w-full grid-cols-2 gap-2 sm:gap-3">
-          <StatTile
-            label="MIRROR EFFICIENCY"
-            value={efficiency !== null ? `${efficiency}%` : "—"}
-            detail={
-              minMirrors !== undefined
-                ? `${mirrorsUsed} used · min ${minMirrors}`
-                : null
-            }
-            accentValue={efficiencyScore !== null && efficiencyScore <= 3}
+          {efficiencyScore !== null && (
+            <Meter
+              label="Efficiency"
+              score={efficiencyScore}
+              detail={efficiencyDetail}
+            />
+          )}
+          <Meter
+            label="Speed"
+            score={speedScore}
+            detail={formatTime(timeSeconds)}
           />
-          {/* Pace label mapped 1:1 from the speed-meter score, which bands on
-              seconds per required mirror (see getSpeedScore). */}
-          <StatTile
-            label="SPEED LABEL"
-            value={speedLabel}
-            detail={`Fastest: ${formatTime(fastestSeconds)}`}
-            accentValue={speedScore <= 2}
-          />
-          <StatTile
-            label="MISTAKES"
-            value={wrongNumberHits}
+          <Meter
+            label="Accuracy"
+            score={accuracyScore}
             detail={
               wrongNumberHits === 0
-                ? "clean run"
-                : "Wrong Number & Early Flag Slip-Ups"
+                ? "clean"
+                : pluralize(wrongNumberHits, "mistake")
             }
-            accentValue={wrongNumberHits > 0}
-            big
           />
-          <StatTile
-            label="HINTS USED"
-            value={hintsUsed}
-            detail={hintsUsed === 0 ? "solo solve" : null}
-            accentValue={hintsUsed > 0}
-            big
-          />
-        </div>
+        </motion.div>
 
-        <div className="flex flex-col items-center gap-0.5 sm:gap-1.5">
-          <span className="text-[0.65rem] tracking-[0.2em] text-white/40 sm:text-xs">
-            NEXT DAILY PUZZLE
-          </span>
-          <span className="font-mono text-lg text-white sm:text-xl">{countdown}</span>
-        </div>
-
-        {isDaily ? (
-          <div className="mt-1 flex w-full flex-nowrap justify-center gap-2 sm:mt-4 sm:gap-3">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleHome}
-              className={actionButtonClass}
-            >
-              HOME
-            </motion.button>
-            {!isPractice && (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSeeSolve}
-                  className={actionButtonClass}
-                >
-                  SEE SOLVE
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleShare}
-                  className={actionButtonClass}
-                >
-                  {copied ? "COPIED!" : "SHARE"}
-                </motion.button>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="mt-1 grid w-full grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleReplay}
-              className={actionButtonClass}
-            >
-              REPLAY
-            </motion.button>
-            {!isPractice ? (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleSeeSolve}
-                className={actionButtonClass}
-              >
-                SEE SOLVE
-              </motion.button>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleHome}
-                className={actionButtonClass}
-              >
-                HOME
-              </motion.button>
-            )}
-            {!isPractice && (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleHome}
-                  className={actionButtonClass}
-                >
-                  HOME
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleShare}
-                  className={actionButtonClass}
-                >
-                  {copied ? "COPIED!" : "SHARE"}
-                </motion.button>
-              </>
-            )}
+        {isDaily && (
+          <div className="flex flex-col items-center gap-1">
+            <span className={LABEL_CLASS}>Next puzzle in</span>
+            <span className="font-mono text-lg text-white/80">{countdown}</span>
           </div>
         )}
+
+        <div className="flex w-full flex-col items-center gap-4">
+          {!isPractice && (
+            <button
+              onClick={handleShare}
+              className="w-full border border-white/70 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white hover:bg-white/5"
+            >
+              {copied ? "COPIED" : "SHARE"}
+            </button>
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            {!isDaily && (
+              <button
+                onClick={handleReplay}
+                className="text-xs text-white/55 transition-colors hover:text-white"
+              >
+                Replay
+              </button>
+            )}
+            {!isPractice && (
+              <button
+                onClick={handleSeeSolve}
+                className="text-xs text-white/55 transition-colors hover:text-white"
+              >
+                See solve
+              </button>
+            )}
+            <button
+              onClick={handleHome}
+              className="text-xs text-white/55 transition-colors hover:text-white"
+            >
+              Home
+            </button>
+          </div>
+        </div>
       </motion.div>
     </main>
   );
