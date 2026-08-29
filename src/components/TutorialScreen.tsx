@@ -47,8 +47,8 @@ const BOARD_REGION_GAP_PX = 24;
 const TUTORIAL_MAX_CELL_SIZE = 96;
 /** Beat after the laser hits the flag before the ready overlay (same as play). */
 const COMPLETION_NAV_DELAY_MS = 350;
-/** Shared by the checkmark spring delay and the victory resolve it lands on. */
-const CHECKMARK_DELAY_S = 0.3;
+/** Delay on the ready overlay's reveal, which the victory resolve lands on. */
+const READY_REVEAL_DELAY_S = 0.3;
 
 const navButtonClass =
   "bg-transparent px-1.5 py-1.5 text-[0.72rem] tracking-[0.1em] text-white/88 transition-colors outline-none hover:text-white disabled:cursor-not-allowed disabled:text-white/38 sm:px-3 sm:text-[0.83rem] sm:tracking-[0.15em] md:px-4 md:py-2 md:text-[0.97rem] [-webkit-tap-highlight-color:transparent]";
@@ -219,7 +219,7 @@ export default function TutorialScreen() {
     if (!showReady) return;
     setBeamPresence(0.4);
     if (consumeVictoryResolve()) {
-      playIn("victoryResolve", CHECKMARK_DELAY_S);
+      playIn("victoryResolve", READY_REVEAL_DELAY_S);
     }
   }, [showReady]);
 
@@ -682,59 +682,41 @@ export default function TutorialScreen() {
 
       {showReady && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black px-[max(1rem,env(safe-area-inset-left))] py-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-[max(2rem,env(safe-area-inset-bottom))]">
+          {/* Same shape as the play completion screen: heading, one primary
+              button, secondary actions as text links. No checkmark, and no
+              filler caption, because unlike a solve there is no result to
+              report here. */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="flex w-full max-w-md flex-col items-center gap-3.5 border border-white/10 bg-black px-5 py-5 sm:gap-6 sm:px-12 sm:py-10"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-5 py-8 sm:px-12 sm:py-10"
           >
-            <h2 className="text-[clamp(1.15rem,5.5vw,1.875rem)] tracking-[0.3em] text-white">
-              TUTORIAL
+            <h2 className="text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
+              TUTORIAL COMPLETE
             </h2>
 
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                delay: CHECKMARK_DELAY_S,
-                type: "spring",
-                stiffness: 200,
-              }}
-              className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#FF2D2D] sm:h-16 sm:w-16"
-            >
-              <svg
-                className="h-6 w-6 sm:h-8 sm:w-8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#FF2D2D"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-            </motion.div>
-
-            <div className="mt-1 flex w-full flex-col gap-2 sm:mt-2 sm:gap-3">
+            <div className="flex w-full flex-col items-center gap-4">
               <button
                 type="button"
                 onClick={() => {
                   play("uiTick");
                   router.push("/play");
                 }}
-                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5 sm:px-6"
+                className="w-full border border-white/70 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white hover:bg-white/5"
               >
                 SOLVE TODAY&apos;S PUZZLE
               </button>
+
               <button
                 type="button"
                 onClick={() => {
                   play("uiTick");
                   router.push("/");
                 }}
-                className="w-full border border-white/20 px-5 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white/70 hover:bg-white/5 sm:px-6"
+                className="px-2 py-2 text-sm text-white/70 transition-colors hover:text-white"
               >
-                BACK TO HOME
+                Home
               </button>
             </div>
           </motion.div>

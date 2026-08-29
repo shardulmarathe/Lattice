@@ -672,10 +672,11 @@ export default function GameScreen() {
         onRules={handleRules}
         onPause={handlePause}
         onClear={handleClearBoard}
-        onHint={
-          solutionMirrors && !isViewingSolve ? handleHint : undefined
-        }
-        hintDisabled={nextHint === null || isPaused}
+        // Hidden only when the puzzle has no solution data at all. Viewing a
+        // solve greys it out instead of removing it, so it matches RESET and
+        // PAUSE beside it rather than making the row reflow.
+        onHint={solutionMirrors ? handleHint : undefined}
+        hintDisabled={nextHint === null || isPaused || isViewingSolve}
         disabled={isComplete || gameplayLocked}
       />
 
