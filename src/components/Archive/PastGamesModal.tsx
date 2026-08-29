@@ -8,6 +8,7 @@ import { getPuzzleById } from "@/data/puzzles";
 import { getPuzzleProgress, type PuzzleProgress } from "@/lib/gameStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { formatTime } from "@/lib/validation";
+import PuzzleThumbnail from "./PuzzleThumbnail";
 
 interface PastGamesModalProps {
   isOpen: boolean;
@@ -21,18 +22,18 @@ interface ArchiveRow {
 }
 
 const MONTHS = [
-  "JAN",
-  "FEB",
-  "MAR",
-  "APR",
-  "MAY",
-  "JUN",
-  "JUL",
-  "AUG",
-  "SEP",
-  "OCT",
-  "NOV",
-  "DEC",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /** Format a YYYY-MM-DD key without constructing a timezone-sensitive Date. */
@@ -43,21 +44,30 @@ function formatDateLabel(dateKey: string): string {
 }
 
 /**
- * The outcome column. An unplayed puzzle has no result rather than a status
- * worth a word, so it reads as an em-less dash instead of "NEW".
+ * The outcome column. An unplayed puzzle shows a dim middle dot: it has no
+ * result rather than a status worth a word, and "---" read as broken data.
+ * The dot is decorative, so the accessible name is spelled out separately.
  */
 function outcomeLabel(progress: PuzzleProgress): string {
   if (progress.status === "solved" && progress.completionSeconds !== null) {
     return formatTime(progress.completionSeconds);
   }
   if (progress.status === "in-progress") return "In progress";
-  return "---";
+  return "·";
+}
+
+function outcomeDescription(progress: PuzzleProgress): string {
+  if (progress.status === "solved") return "solved";
+  if (progress.status === "in-progress") return "in progress";
+  return "not played";
 }
 
 function outcomeClass(progress: PuzzleProgress): string {
-  if (progress.status === "solved") return "text-white";
-  if (progress.status === "in-progress") return "text-white/70";
-  return "text-white/40";
+  if (progress.status === "solved") return "text-sm text-white";
+  if (progress.status === "in-progress") return "text-sm text-white/70";
+  // Bigger and a little brighter than the times, because a 14px middle dot at
+  // white/30 disappeared entirely and read as a rendering gap.
+  return "text-xl leading-none text-white/40";
 }
 
 export default function PastGamesModal({
@@ -128,7 +138,7 @@ export default function PastGamesModal({
             role="dialog"
             aria-modal="true"
             aria-label="Past games"
-            className="max-h-[90vh] w-full max-w-sm overflow-y-auto border border-white/15 bg-black p-6 md:p-8"
+            className="max-h-[90vh] w-full max-w-sm overflow-y-auto border border-white/15 bg-black p-5 sm:p-6 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-start justify-between gap-4">
@@ -156,18 +166,30 @@ export default function PastGamesModal({
                     key={row.puzzle.id}
                     type="button"
                     onClick={() => handleSelect(row)}
-                    className="grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 py-3 text-left transition-colors last:border-b hover:bg-white/5"
+                    className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-white/10 py-3 text-left transition-colors last:border-b hover:bg-white/5 sm:gap-4"
                   >
-                    <span className="text-xs tracking-[0.2em] text-white/55">
-                      {formatDateLabel(row.dateKey)}
-                    </span>
-                    <span className="text-xs tracking-[0.2em] text-white/80">
-                      #{row.puzzle.id.toString().padStart(3, "0")}
+                    <PuzzleThumbnail
+                      puzzle={row.puzzle}
+                      className="h-12 w-12 shrink-0 sm:h-16 sm:w-16"
+                    />
+                    {/* Date and number as one group, so the result is the only
+                        thing on the far right and there is no dead gap. */}
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-sm text-white/85">
+                        {formatDateLabel(row.dateKey)}
+                      </span>
+                      <span className="text-xs text-white/45">
+                        #{row.puzzle.id.toString().padStart(3, "0")}
+                      </span>
                     </span>
                     <span
-                      className={`font-mono text-xs ${outcomeClass(row.progress)}`}
+                      className={`shrink-0 font-mono ${outcomeClass(row.progress)}`}
                     >
                       {outcomeLabel(row.progress)}
+                      <span className="sr-only">
+                        {" "}
+                        {outcomeDescription(row.progress)}
+                      </span>
                     </span>
                   </button>
                 ))}
