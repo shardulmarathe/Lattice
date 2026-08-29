@@ -8,7 +8,7 @@ name: Solve puzzle min-mirrors
 
 on:
   schedule:
-    # ~07:00 UTC daily — an hour after generation, so it also picks up new puzzles.
+    # ~07:00 UTC daily, an hour after generation, so it also picks up new puzzles.
     - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:

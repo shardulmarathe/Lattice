@@ -155,7 +155,7 @@ sample-and-hold drives its `Q` so the bandwidth breathes, and another source
 multiplies the output gain. Sparse impulses from `crackleBuffer` add the
 discrete pops. The mechanism that makes all of this possible without any assets
 is that Web Audio lets an `AudioBufferSourceNode` connect **directly to an
-`AudioParam`** — so a noise buffer is a literal audio-rate modulator.
+`AudioParam`**, so a noise buffer is a literal audio-rate modulator.
 
 Two hazards live in that primitive, both of which have bitten:
 

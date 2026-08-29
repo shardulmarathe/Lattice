@@ -155,7 +155,7 @@ let improvedThisRun = 0;
 
 for (const id of queue) {
   if (Date.now() >= deadline) {
-    console.log("Time budget exhausted — stopping.");
+    console.log("Time budget exhausted, stopping.");
     break;
   }
 
@@ -205,7 +205,7 @@ for (const id of queue) {
   writeSolutionsOrdered(solutionsOut, solutions);
 
   if (res.aborted) {
-    console.log("Deadline reached mid-search — stopping.");
+    console.log("Deadline reached mid-search, stopping.");
     break;
   }
 }

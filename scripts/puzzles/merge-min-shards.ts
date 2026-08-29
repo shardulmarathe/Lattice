@@ -134,7 +134,7 @@ const solutionShards = mergeFile<MirrorPlacement[]>(SOLUTIONS_FILE, (base, next)
 );
 
 if (statShards === 0 && progressShards === 0 && solutionShards === 0) {
-  console.log("No shard files found — nothing to merge.");
+  console.log("No shard files found, nothing to merge.");
 } else {
   console.log(
     `Done: merged ${statShards} stats shard(s), ${progressShards} progress shard(s), ${solutionShards} solutions shard(s).`

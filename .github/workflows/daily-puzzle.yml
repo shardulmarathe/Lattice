@@ -5,7 +5,7 @@ name: Daily puzzle generation
 
 on:
   schedule:
-    # ~06:00 UTC daily — well before any player's next local midnight given the buffer.
+    # ~06:00 UTC daily, well before any player's next local midnight given the buffer.
     - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
@@ -49,7 +49,7 @@ jobs:
         run: |
           git add src/data content
           if git diff --cached --quiet; then
-            echo "No new puzzles — buffer already covered. Nothing to commit."
+            echo "No new puzzles, buffer already covered. Nothing to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"

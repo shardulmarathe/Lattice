@@ -738,8 +738,8 @@ export default function GameScreen() {
 
           <p className="text-center text-xs tracking-wider text-white/70 md:text-sm">
             {isViewingSolve
-              ? "Your solution — mirrors locked."
-              : "Place a mirror on the laser to redirect it — tap again to rotate or remove it. Lasers can cross paths and pass through the source."}
+              ? "Your solution. Mirrors locked."
+              : "Place a mirror on the laser to redirect it. Tap again to rotate or remove it. Lasers can cross paths and pass through the source."}
           </p>
         </div>
       </div>

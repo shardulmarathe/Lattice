@@ -56,7 +56,7 @@ for (const puzzle of targets) {
   } else {
     failures++;
     console.error(
-      `  #${puzzle.id}: MISMATCH — expected min=${expected}, got ` +
+      `  #${puzzle.id}: MISMATCH: expected min=${expected}, got ` +
         `${res.minMirrors ?? `unsolved (≥${res.provenNoSolutionUpTo + 1})`} (${secs}s)`
     );
   }

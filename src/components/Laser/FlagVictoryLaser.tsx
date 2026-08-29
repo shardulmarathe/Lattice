@@ -86,7 +86,7 @@ export default function FlagVictoryLaser({
         </filter>
       </defs>
 
-      {/* Static ring — same three layers as LaserPath line segments */}
+      {/* Static ring, same three layers as LaserPath line segments */}
       <circle
         cx={center.x}
         cy={center.y}

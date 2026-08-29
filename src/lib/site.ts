@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: "Lattice",
-  title: "Lattice — Laser Reflection Puzzle Game",
+  title: "Lattice: Laser Reflection Puzzle Game",
   description:
     "Route mirrors to guide a laser through numbered tiles in order. A minimalist daily logic puzzle with a sleek black, white, and red aesthetic.",
 };

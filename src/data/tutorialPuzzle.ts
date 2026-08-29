@@ -10,7 +10,7 @@ import type { Puzzle } from "@/lib/puzzleTypes";
  *   2 . . . .
  *   . 4 . . F
  *
- * Empty board: laser runs into the white block — no number/flag error on load.
+ * Empty board: laser runs into the white block, so no number/flag error on load.
  *
  * Teachable illegal turns:
  *   - On 3 with \  ≡ longer legal route via (3,0)\

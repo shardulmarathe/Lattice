@@ -35,7 +35,7 @@ async function waitForServer(url, timeoutMs = 120000) {
 async function main() {
   const nextBin = join(ROOT, "node_modules", ".bin", "next");
   if (!existsSync(nextBin)) {
-    console.warn("[og] next binary not found — skipping capture");
+    console.warn("[og] next binary not found, skipping capture");
     return;
   }
 
@@ -58,7 +58,7 @@ async function main() {
   try {
     const up = await waitForServer(URL);
     if (!up) {
-      console.warn("[og] dev server did not become ready — skipping capture");
+      console.warn("[og] dev server did not become ready, skipping capture");
       return;
     }
 

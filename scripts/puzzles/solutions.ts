@@ -62,7 +62,7 @@ for (const puzzle of PUZZLES) {
 
   const min = stats[puzzle.id]?.minMirrors;
   if (min === undefined) {
-    console.log(`#${puzzle.id}: no proven exact minimum yet — skipping.`);
+    console.log(`#${puzzle.id}: no proven exact minimum yet, skipping.`);
     continue;
   }
 
@@ -89,7 +89,7 @@ for (const puzzle of PUZZLES) {
     );
   } else {
     console.error(
-      `#${puzzle.id}: FAILED to find a witness at budget ${min}${res.aborted ? " (timed out)" : ""} — stats may be stale.`
+      `#${puzzle.id}: FAILED to find a witness at budget ${min}${res.aborted ? " (timed out)" : ""}, stats may be stale.`
     );
     process.exitCode = 1;
   }

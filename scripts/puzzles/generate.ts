@@ -200,7 +200,7 @@ function main(): void {
 
   if (created === 0) {
     console.log(
-      `Buffer already covers ${args.today} … ${addDays(args.today, args.days)} — nothing to do.`
+      `Buffer already covers ${args.today} … ${addDays(args.today, args.days)}, nothing to do.`
     );
     return;
   }

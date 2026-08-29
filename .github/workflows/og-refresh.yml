@@ -3,7 +3,7 @@ name: Refresh OG screenshot
 # Re-captures the homepage screenshot used for link previews (og:image) after
 # every push and commits it back; that commit triggers the Vercel deploy that
 # actually serves the fresh image. This runs here instead of inside the Vercel
-# build because headless Chrome cannot launch in Vercel's build container —
+# build because headless Chrome cannot launch in Vercel's build container, so
 # the old in-build capture failed silently on every deploy.
 
 on:
@@ -11,7 +11,7 @@ on:
     branches: [master]
   schedule:
     # daily-puzzle.yml pushes with GITHUB_TOKEN at 06:00 UTC, which can't
-    # trigger this workflow — so re-capture on our own schedule just after,
+    # trigger this workflow, so re-capture on our own schedule just after,
     # keeping the preview in sync with the day's puzzle.
     - cron: "30 6 * * *"
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
         run: |
           git add public/og-home.png
           if git diff --cached --quiet; then
-            echo "Screenshot unchanged — nothing to commit."
+            echo "Screenshot unchanged, nothing to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
