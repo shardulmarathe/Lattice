@@ -692,7 +692,7 @@ export default function TutorialScreen() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-5 py-8 sm:px-12 sm:py-10"
           >
-            <h2 className="text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
+            <h2 className="text-balance text-center text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
               TUTORIAL COMPLETE
             </h2>
 

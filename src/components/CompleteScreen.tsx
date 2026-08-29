@@ -295,7 +295,7 @@ export default function CompleteScreen() {
         className="flex w-full max-w-md flex-col items-center gap-6 border border-white/10 bg-black px-5 py-8 sm:px-12 sm:py-10"
       >
         <div className="flex flex-col items-center gap-1.5">
-          <h2 className="text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
+          <h2 className="text-center text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
             LATTICE #{puzzle.id.toString().padStart(3, "0")}
           </h2>
           {meta !== "" && <span className={DETAIL_CLASS}>{meta}</span>}
