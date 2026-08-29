@@ -347,12 +347,22 @@ export default function CompleteScreen() {
         )}
 
         <div className="flex w-full flex-col items-center gap-4">
+          {/* The share button's height is pinned rather than derived from
+              padding plus the font's line-height, so swapping to the smaller
+              confirmation size cannot resize the box. 46px is what py-3 +
+              text-sm + the 1px borders already measured. whitespace-nowrap is
+              safe because the confirmation measures 226.8px at these sizes,
+              inside the 248px a 320px phone leaves for it. */}
           {!isPractice && (
             <button
               onClick={handleShare}
-              className="w-full border border-white/70 py-3 text-sm tracking-[0.2em] text-white transition-colors hover:border-white hover:bg-white/5"
+              className={`flex h-[46px] w-full items-center justify-center whitespace-nowrap border border-white/70 text-white transition-colors hover:border-white hover:bg-white/5 ${
+                copied
+                  ? "text-xs tracking-[0.1em] sm:text-sm"
+                  : "text-sm tracking-[0.2em]"
+              }`}
             >
-              {copied ? "COPIED" : "SHARE"}
+              {copied ? "Copied! Share with Friends!" : "SHARE"}
             </button>
           )}
 
