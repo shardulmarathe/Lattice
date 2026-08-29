@@ -2,46 +2,51 @@ import type { Puzzle } from "@/lib/puzzleTypes";
 
 interface PuzzleThumbnailProps {
   puzzle: Puzzle;
+  /** Rendered pixel size (square). */
+  size?: number;
   className?: string;
 }
 
-/** SVG user units per cell. Rendered size comes from CSS, not from this. */
 const CELL = 10;
+const LASER_RED = "#FF3B1F";
+
+function cellKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
 
 /**
- * A small shape-only snapshot of a puzzle's board: grid, obstacles, source and
- * flag. Deliberately no numbers and no laser.
- *
- * The previous version drew the number tiles, which put 7px digits on a 56px
- * square and made every board reduce to the same grey speckle. Shapes survive
- * the shrink where glyphs do not, so this reads as the board's face rather than
- * as unreadable data. Sizing is left to the caller so it can be responsive.
+ * A small, self-contained SVG snapshot of a puzzle's static board, source,
+ * flag, obstacles and number tiles. No laser, mirrors or interaction. Used by
+ * the Past Games archive cards. Deliberately not the heavy interactive Board.
  */
 export default function PuzzleThumbnail({
   puzzle,
+  size = 56,
   className,
 }: PuzzleThumbnailProps) {
-  const { gridSize, source, flag, obstacles } = puzzle;
+  const { gridSize, source, flag, numbers, obstacles } = puzzle;
   const dim = gridSize * CELL;
+  const obstacleSet = new Set(obstacles.map((o) => cellKey(o.x, o.y)));
 
   return (
     <svg
+      width={size}
+      height={size}
       viewBox={`0 0 ${dim} ${dim}`}
       className={className}
       aria-hidden
-      // Keeps the 1px-ish strokes below crisp instead of smeared when the SVG
-      // is scaled down to 48px by CSS.
-      shapeRendering="crispEdges"
     >
       <rect x={0} y={0} width={dim} height={dim} fill="#000" />
 
+      {/* grid lines */}
       {Array.from({ length: gridSize + 1 }).map((_, i) => (
-        <g key={`g-${i}`} stroke="rgba(255,255,255,0.14)" strokeWidth={0.4}>
+        <g key={`g-${i}`} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5}>
           <line x1={i * CELL} y1={0} x2={i * CELL} y2={dim} />
           <line x1={0} y1={i * CELL} x2={dim} y2={i * CELL} />
         </g>
       ))}
 
+      {/* obstacles */}
       {obstacles.map((o) => (
         <rect
           key={`o-${o.x}-${o.y}`}
@@ -49,32 +54,56 @@ export default function PuzzleThumbnail({
           y={o.y * CELL + 1}
           width={CELL - 2}
           height={CELL - 2}
-          fill="rgba(255,255,255,0.55)"
+          fill="#fff"
         />
       ))}
 
-      {/* Source: a filled laser dot rather than a ring, which holds its shape
-          far better than a 1px annulus does at 48px. */}
+      {/* number tiles */}
+      {numbers.map((n) =>
+        obstacleSet.has(cellKey(n.x, n.y)) ? null : (
+          <text
+            key={`n-${n.x}-${n.y}`}
+            x={n.x * CELL + CELL / 2}
+            y={n.y * CELL + CELL / 2}
+            fill="#fff"
+            fontSize={CELL * 0.7}
+            fontFamily="var(--font-geist-mono, monospace)"
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
+            {n.value}
+          </text>
+        )
+      )}
+
+      {/* source */}
       <circle
         cx={source.x * CELL + CELL / 2}
         cy={source.y * CELL + CELL / 2}
-        r={CELL * 0.28}
-        fill="var(--laser)"
-        shapeRendering="geometricPrecision"
+        r={CELL * 0.32}
+        fill="none"
+        stroke={LASER_RED}
+        strokeWidth={1.2}
+      />
+      <circle
+        cx={source.x * CELL + CELL / 2}
+        cy={source.y * CELL + CELL / 2}
+        r={CELL * 0.12}
+        fill={LASER_RED}
       />
 
-      {/* Flag: a solid pennant, again for shape over stroke detail, and
-          scaled up because at 48px the earlier version was a speck. Pure white
-          against the greyed obstacles so the two are not confusable. */}
+      {/* flag */}
       <g
-        transform={`translate(${flag.x * CELL + CELL * 0.26} ${flag.y * CELL + CELL * 0.15})`}
-        shapeRendering="geometricPrecision"
+        transform={`translate(${flag.x * CELL + CELL * 0.3} ${
+          flag.y * CELL + CELL * 0.22
+        })`}
+        stroke="#fff"
+        strokeWidth={1}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
       >
-        <rect x={0} y={0} width={CELL * 0.16} height={CELL * 0.72} fill="#fff" />
-        <path
-          d={`M${CELL * 0.16} 0 L${CELL * 0.62} ${CELL * 0.2} L${CELL * 0.16} ${CELL * 0.4} Z`}
-          fill="#fff"
-        />
+        <path d={`M0 ${CELL * 0.6} V0 M0 0 L${CELL * 0.42} ${CELL * 0.18} L0 ${CELL * 0.36}`} />
       </g>
     </svg>
   );
