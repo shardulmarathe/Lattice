@@ -76,9 +76,12 @@ function resolvePuzzle(searchParams: URLSearchParams): Puzzle {
   return getPuzzleForDate(new Date()) ?? PUZZLE_001;
 }
 
-function shouldShowTutorialOnLoad(saved: SavedGameState): boolean {
+function shouldShowTutorialOnLoad(
+  saved: SavedGameState,
+  isViewingSolve: boolean
+): boolean {
   if (hasSeenTutorial()) return false;
-  if (saved.isViewingSolve || saved.isComplete) return false;
+  if (isViewingSolve || saved.isComplete) return false;
   return true;
 }
 
@@ -87,6 +90,13 @@ export default function GameScreen() {
   const searchParams = useSearchParams();
   const puzzle = useMemo(() => resolvePuzzle(searchParams), [searchParams]);
   const wantsReplay = searchParams.get("replay") === "1";
+  // Viewing the solution is a property of this navigation, not of the save. It
+  // used to be persisted, which meant one See Solve click stuck the flag on
+  // forever and every later visit to /play landed on the locked board instead
+  // of the completion screen. Reading it from the URL scopes it to the trip
+  // and survives a reload, and saves are now always written with the field
+  // false so an old stuck save heals itself on first load.
+  const isViewingSolve = searchParams.get("solve") === "1";
   // A tab left open overnight has yesterday's puzzle frozen in the memo above.
   // Deliberately not `atMidnight`, a solve running at 23:59 is never yanked;
   // the swap waits until the player leaves the tab and comes back.
@@ -119,7 +129,7 @@ export default function GameScreen() {
     return base;
   }, [puzzle.id, isPractice]);
   const [initialComplete] = useState(
-    () => saved.isComplete && !saved.isViewingSolve
+    () => saved.isComplete && !isViewingSolve
   );
 
   const [mirrors, setMirrors] = useState<MirrorPlacement[]>(saved.mirrors);
@@ -134,16 +144,15 @@ export default function GameScreen() {
   const [placementWarning, setPlacementWarning] = useState<string | null>(null);
   const placementWarningTimerRef = useRef<number | null>(null);
   const [isPaused, setIsPaused] = useState(saved.isPaused);
-  const isViewingSolve = saved.isViewingSolve;
   const [savedComplete, setSavedComplete] = useState(saved.isComplete);
   const [completionSeconds, setCompletionSeconds] = useState<number | null>(
     saved.completionSeconds
   );
   const [pendingFirstPlay, setPendingFirstPlay] = useState(() =>
-    shouldShowTutorialOnLoad(saved)
+    shouldShowTutorialOnLoad(saved, isViewingSolve)
   );
   const [showHowToPlay, setShowHowToPlay] = useState(() =>
-    shouldShowTutorialOnLoad(saved)
+    shouldShowTutorialOnLoad(saved, isViewingSolve)
   );
   const shouldPlayCodeIntro = !isViewingSolve && !saved.isComplete;
   const [codeIntroComplete, setCodeIntroComplete] = useState(
@@ -189,7 +198,8 @@ export default function GameScreen() {
             ? overrides.completionSeconds
             : completionSeconds,
         isComplete: overrides.isComplete ?? isComplete,
-        isViewingSolve: overrides.isViewingSolve ?? isViewingSolve,
+        // Never persisted as true: see the note on isViewingSolve above.
+        isViewingSolve: overrides.isViewingSolve ?? false,
         isPaused: overrides.isPaused ?? isPaused,
         wrongNumberHits: overrides.wrongNumberHits ?? wrongNumberHits,
         hintsUsed: overrides.hintsUsed ?? hintsUsed,
@@ -203,7 +213,6 @@ export default function GameScreen() {
       seconds,
       completionSeconds,
       isComplete,
-      isViewingSolve,
       isPaused,
       wrongNumberHits,
       hintsUsed,

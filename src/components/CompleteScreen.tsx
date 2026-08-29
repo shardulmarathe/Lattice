@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPuzzleById, getPuzzleForDate, PUZZLE_001 } from "@/data/puzzles";
 import { isPuzzleUnlocked } from "@/lib/archive";
-import { loadGameState, saveGameState } from "@/lib/gameStorage";
+import { loadGameState } from "@/lib/gameStorage";
 import { markTutorialSeen } from "@/lib/tutorialStorage";
 import type { Puzzle } from "@/lib/puzzleTypes";
 import { getShareText } from "@/lib/shareText";
@@ -163,6 +163,9 @@ export default function CompleteScreen() {
   // Preserve ?puzzle=N so play/replay navigation stays on the archived puzzle.
   const playRoute = isDaily ? "/play" : `/play?puzzle=${puzzle.id}`;
   const replayRoute = `${playRoute}${playRoute.includes("?") ? "&" : "?"}replay=1`;
+  // Carries the viewing intent in the URL rather than in the save, so it
+  // applies to this trip only and a later plain /play still lands here.
+  const solveRoute = `${playRoute}${playRoute.includes("?") ? "&" : "?"}solve=1`;
 
   // Only today's solve leads into tomorrow's puzzle, so an archive completion
   // has nothing to count down to.
@@ -248,13 +251,11 @@ export default function CompleteScreen() {
 
   const handleSeeSolve = useCallback(() => {
     play("uiTick");
-    const saved = loadGameState(puzzle);
-    if (!saved) return;
+    if (!loadGameState(puzzle)) return;
 
-    saveGameState({ ...saved, isViewingSolve: true });
     markTutorialSeen();
-    router.push(playRoute);
-  }, [puzzle, router, playRoute]);
+    router.push(solveRoute);
+  }, [puzzle, router, solveRoute]);
 
   const handleReplay = useCallback(() => {
     play("uiTick");
