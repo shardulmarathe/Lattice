@@ -353,28 +353,3 @@ export function getPointOnPath(
 
   return path.points[path.points.length - 1];
 }
-
-export function getDirectionOnPath(
-  path: ContinuousPath,
-  t: number
-): { dx: number; dy: number } | null {
-  if (path.segmentLengths.length === 0) return null;
-
-  const normalized = ((t % 1) + 1) % 1;
-  let target = normalized * path.totalLength;
-
-  for (let i = 0; i < path.segmentLengths.length; i++) {
-    const segLen = path.segmentLengths[i];
-    if (target <= segLen || i === path.segmentLengths.length - 1) {
-      const from = path.points[i];
-      const to = path.points[i + 1];
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const mag = Math.hypot(dx, dy) || 1;
-      return { dx: dx / mag, dy: dy / mag };
-    }
-    target -= segLen;
-  }
-
-  return null;
-}

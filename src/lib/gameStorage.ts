@@ -156,16 +156,6 @@ export function saveGameState(
   }
 }
 
-export function clearPracticeState(puzzleId: number): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.removeItem(storageKey(puzzleId, "practice"));
-  } catch {
-    // Ignore private browsing errors
-  }
-}
-
 export function createDefaultGameState(puzzle: Puzzle): SavedGameState {
   return {
     puzzleId: puzzle.id,

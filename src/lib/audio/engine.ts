@@ -218,10 +218,6 @@ export function unlock(): void {
   notifyArmed();
 }
 
-export function isEnabled(): boolean {
-  return enabled;
-}
-
 export function setEnabled(on: boolean): void {
   enabled = on;
 

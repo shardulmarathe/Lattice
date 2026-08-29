@@ -41,16 +41,6 @@ body {
   color: #ffffff;
 }
 
-@keyframes laser-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.75;
-  }
-}
-
 @keyframes number-glow {
   0%,
   100% {
@@ -63,44 +53,8 @@ body {
   }
 }
 
-.animate-laser-pulse {
-  animation: laser-pulse 2s ease-in-out infinite;
-}
-
 .animate-number-glow {
   animation: number-glow 2s ease-in-out infinite;
-}
-
-@keyframes code-label-glow {
-  0%,
-  100% {
-    text-shadow: 0 0 14px rgba(255, 59, 31, 0.55),
-      0 0 28px rgba(255, 45, 45, 0.3);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(255, 59, 31, 0.75),
-      0 0 40px rgba(255, 45, 45, 0.45);
-  }
-}
-
-@keyframes code-solved-glow {
-  0%,
-  100% {
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.55),
-      0 0 24px rgba(255, 255, 255, 0.28);
-  }
-  50% {
-    text-shadow: 0 0 18px rgba(255, 255, 255, 0.85),
-      0 0 36px rgba(255, 255, 255, 0.45);
-  }
-}
-
-.animate-code-label-glow {
-  animation: code-label-glow 2s ease-in-out infinite;
-}
-
-.animate-code-solved-glow {
-  animation: code-solved-glow 2s ease-in-out infinite;
 }
 
 .target-code-digits {
@@ -123,28 +77,6 @@ body {
   text-shadow:
     0 0 12px rgba(255, 255, 255, 0.55),
     0 0 24px rgba(255, 255, 255, 0.28);
-}
-
-@keyframes code-hero-glow {
-  0%,
-  100% {
-    color: #ff3b1f;
-    text-shadow:
-      0 0 20px rgba(255, 59, 31, 0.9),
-      0 0 40px rgba(255, 59, 31, 0.55),
-      0 0 72px rgba(255, 45, 45, 0.35);
-  }
-  50% {
-    color: #ff3b1f;
-    text-shadow:
-      0 0 28px rgba(255, 59, 31, 1),
-      0 0 56px rgba(255, 59, 31, 0.75),
-      0 0 96px rgba(255, 45, 45, 0.45);
-  }
-}
-
-.animate-code-hero-glow {
-  animation: code-hero-glow 2s ease-in-out infinite;
 }
 
 @keyframes warning-flash-glow {

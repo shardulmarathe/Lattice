@@ -52,31 +52,6 @@ function pluralize(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-// Clipboard share text is plain text, which can't carry real formatting, so
-// emphasized figures (the speed label, the efficiency percentage) are mapped to
-// Unicode sans-serif bold code points (𝗙𝗮𝘀𝘁, 𝟴𝟲%), which render bold when
-// pasted into most chat and social apps.
-const BOLD_UPPER_A = 0x1d5d4; // 𝗔
-const BOLD_LOWER_A = 0x1d5ee; // 𝗮
-const BOLD_ZERO = 0x1d7ec; // 𝟬
-
-export function toBoldSans(text: string): string {
-  let out = "";
-  for (const ch of text) {
-    const code = ch.codePointAt(0) ?? 0;
-    if (code >= 0x41 && code <= 0x5a) {
-      out += String.fromCodePoint(BOLD_UPPER_A + code - 0x41);
-    } else if (code >= 0x61 && code <= 0x7a) {
-      out += String.fromCodePoint(BOLD_LOWER_A + code - 0x61);
-    } else if (code >= 0x30 && code <= 0x39) {
-      out += String.fromCodePoint(BOLD_ZERO + code - 0x30);
-    } else {
-      out += ch;
-    }
-  }
-  return out;
-}
-
 // --- Scorecard share text -----------------------------------------------
 // Three 1–5 meters (Efficiency / Speed / Accuracy), each a row of five dots
 // with a plain-language detail. Scores come from src/lib/puzzleStats.ts so the

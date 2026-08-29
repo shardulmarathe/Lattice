@@ -37,12 +37,11 @@ export function getMirrorEfficiency(
 // "fastest" floor is what a speed-runner who already knows the solution needs
 // to physically place the mirrors: a small orient/read base plus ~1s per mirror.
 // Calibrated to the one real record we have (#11: 9 mirrors solved in 12s → 3 +
-// 9·1 = 12). The "good" target is a competent (non-record) solve at 2.5× that
-// floor. Both scale with mirror count, a robust difficulty signal that works
-// even from a lower bound (minMirrorsAtLeast) until the exact min is proven.
+// 9·1 = 12). It scales with mirror count, a robust difficulty signal that
+// works even from a lower bound (minMirrorsAtLeast) until the exact min is
+// proven.
 const FASTEST_BASE_SECONDS = 3;
 const FASTEST_SECONDS_PER_MIRROR = 1.0;
-const GOOD_MULTIPLIER = 2.5;
 
 /**
  * Fastest achievable solve time (seconds), the record floor a puzzle is paced
@@ -55,14 +54,6 @@ export function getFastestSeconds(puzzle: Puzzle): number {
   return Math.round(
     FASTEST_BASE_SECONDS + FASTEST_SECONDS_PER_MIRROR * mirrorRef
   );
-}
-
-/**
- * "Good" target time (seconds): a realistic goal for a competent solver, set at
- * GOOD_MULTIPLIER × the fastest floor.
- */
-export function getGoodSeconds(puzzle: Puzzle): number {
-  return Math.round(getFastestSeconds(puzzle) * GOOD_MULTIPLIER);
 }
 
 // ---------------------------------------------------------------------------
