@@ -36,16 +36,28 @@ const SCORECARD_DELAY_S = 0.3;
  * as recessive, so labels stay dim without dropping under the threshold the way
  * the old white/40 (3.66:1) and white/45 (4.42:1) did.
  */
-const LABEL_CLASS = "text-xs text-white/55";
-const DETAIL_CLASS = "text-xs text-white/50";
+const LABEL_CLASS = "text-xs text-white/55 sm:text-sm";
+const DETAIL_CLASS = "text-xs text-white/50 sm:text-sm";
+
+/**
+ * The secondary actions under SHARE. Brighter and larger than the surrounding
+ * labels because they are controls, not annotation, and padded so they are a
+ * real tap target rather than bare 12px text.
+ */
+const SECONDARY_LINK_CLASS =
+  "px-2 py-2 text-sm text-white/70 transition-colors hover:text-white";
 
 /**
  * One 1-5 meter: label, five dots, a short detail. Same three meters and the
  * same scores as the share text (see getShareText), so the screen and the
  * clipboard can never tell different stories.
  *
- * Dots are white, never red. Red is the laser in this game, not a verdict, so a
- * weak score reads as unlit rather than as an error.
+ * Filled dots are laser red, empty dots are dim white, so red reads as "lit"
+ * rather than as a verdict: a 1-of-5 row is mostly unlit, not mostly wrong.
+ *
+ * Sizes step up at sm rather than unconditionally. At 320px the row has 248px
+ * to work with, and label + dots + the longest detail ("+3 over min") already
+ * fills 238px of it at the smaller scale.
  */
 function Meter({
   label,
@@ -57,14 +69,19 @@ function Meter({
   detail: string;
 }) {
   return (
-    <div className="flex w-full items-center gap-3">
-      <span className={`w-[5.25rem] shrink-0 ${LABEL_CLASS}`}>{label}</span>
-      <span className="flex shrink-0 items-center gap-1" aria-hidden>
+    <div className="flex w-full items-center gap-2.5 sm:gap-3">
+      <span className={`w-[5.25rem] shrink-0 sm:w-24 ${LABEL_CLASS}`}>
+        {label}
+      </span>
+      <span
+        className="flex shrink-0 items-center gap-1 sm:gap-1.5"
+        aria-hidden
+      >
         {Array.from({ length: 5 }).map((_, i) => (
           <span
             key={i}
-            className={`h-2 w-2 rounded-full ${
-              i < score ? "bg-white" : "bg-white/15"
+            className={`h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5 ${
+              i < score ? "bg-laser" : "bg-white/15"
             }`}
           />
         ))}
@@ -259,10 +276,10 @@ export default function CompleteScreen() {
     return <main className="min-h-screen bg-black" />;
   }
 
-  // Grid size and hints ride the meta line exactly as they ride the share text's
-  // header, rather than taking a meter of their own.
+  // Qualifiers only. Grid size was difficulty context the meters already
+  // account for, so it is gone; what is left has to be disclosed. A clean
+  // unhinted record solve is the common case and renders no line at all.
   const meta = [
-    `${puzzle.gridSize}×${puzzle.gridSize}`,
     hintsUsed > 0 ? pluralize(hintsUsed, "hint") : null,
     isPractice ? "practice" : null,
   ]
@@ -281,15 +298,13 @@ export default function CompleteScreen() {
           <h2 className="text-[clamp(1.15rem,5.5vw,1.5rem)] tracking-[0.3em] text-white">
             LATTICE #{puzzle.id.toString().padStart(3, "0")}
           </h2>
-          <span className={DETAIL_CLASS}>{meta}</span>
+          {meta !== "" && <span className={DETAIL_CLASS}>{meta}</span>}
         </div>
 
-        <div className="flex flex-col items-center gap-1">
-          <span className={LABEL_CLASS}>Completion time</span>
-          <span className="font-mono text-4xl text-white sm:text-5xl">
-            {formatTime(timeSeconds)}
-          </span>
-        </div>
+        {/* No caption. A 48px mono clock does not need to be told it is a time. */}
+        <span className="font-mono text-4xl text-white sm:text-5xl">
+          {formatTime(timeSeconds)}
+        </span>
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -344,7 +359,7 @@ export default function CompleteScreen() {
             {!isDaily && (
               <button
                 onClick={handleReplay}
-                className="text-xs text-white/55 transition-colors hover:text-white"
+                className={SECONDARY_LINK_CLASS}
               >
                 Replay
               </button>
@@ -352,15 +367,12 @@ export default function CompleteScreen() {
             {!isPractice && (
               <button
                 onClick={handleSeeSolve}
-                className="text-xs text-white/55 transition-colors hover:text-white"
+                className={SECONDARY_LINK_CLASS}
               >
                 See solve
               </button>
             )}
-            <button
-              onClick={handleHome}
-              className="text-xs text-white/55 transition-colors hover:text-white"
-            >
+            <button onClick={handleHome} className={SECONDARY_LINK_CLASS}>
               Home
             </button>
           </div>
