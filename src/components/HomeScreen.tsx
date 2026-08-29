@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDailyRollover } from "@/hooks/useDailyRollover";
+import { markTutorialSeen } from "@/lib/tutorialStorage";
 import CursorLaserTrail from "./CursorLaserTrail";
 import HowToPlayModal from "./HowToPlayModal";
 import PastGamesModal from "./Archive/PastGamesModal";
@@ -91,6 +92,17 @@ export default function HomeScreen() {
       <HowToPlayModal
         isOpen={showHowToPlay}
         onClose={() => setShowHowToPlay(false)}
+        // "LET'S PLAY!" now actually plays. Marking the tutorial seen matters
+        // as much as the push: GameScreen's shouldShowTutorialOnLoad fires
+        // whenever hasSeenTutorial() is false, so without it a first-time
+        // player would read the rules here and be handed the same modal again
+        // the moment they landed on the board. Dismissing instead of
+        // confirming leaves the flag alone, so the forced first-run read still
+        // happens for anyone who skipped it.
+        onConfirm={() => {
+          markTutorialSeen();
+          router.push("/play");
+        }}
       />
 
       <PastGamesModal
