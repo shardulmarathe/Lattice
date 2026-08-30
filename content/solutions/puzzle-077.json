@@ -1,0 +1,91 @@
+{
+  "id": 77,
+  "scheduledDate": "2026-09-06",
+  "code": "2190",
+  "gridSize": 6,
+  "seed": "2026-09-06:6:36",
+  "solutionMirrors": [
+    {
+      "x": 2,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "orientation": "\\"
+    }
+  ],
+  "mirrorCount": 15,
+  "mirrorDensity": 0.417,
+  "solverCap": 4,
+  "minMirrors": 9,
+  "pathLength": 29,
+  "obstacleInterference": 3,
+  "score": 29.69
+}
