@@ -13,6 +13,7 @@ import {
   getAccuracyScore,
   getEfficiencyScore,
   getPuzzleStats,
+  getSpeedLabel,
   getSpeedScore,
   type MeterScore,
 } from "@/lib/puzzleStats";
@@ -232,6 +233,7 @@ export default function CompleteScreen() {
   // on screen and the dots in the paste always agree.
   const efficiencyScore = getEfficiencyScore(puzzle.id, mirrorsUsed);
   const speedScore = getSpeedScore(puzzle, timeSeconds);
+  const speedLabel = getSpeedLabel(puzzle, timeSeconds);
   const accuracyScore = getAccuracyScore(wrongNumberHits);
 
   // Short screen-side wording for the same figures the share spells out in
@@ -323,11 +325,9 @@ export default function CompleteScreen() {
               detail={efficiencyDetail}
             />
           )}
-          <Meter
-            label="Speed"
-            score={speedScore}
-            detail={formatTime(timeSeconds)}
-          />
+          {/* A pace word, not the clock again: the time is already 48px above
+              this row, so repeating it says nothing the meter does not. */}
+          <Meter label="Speed" score={speedScore} detail={speedLabel} />
           <Meter
             label="Accuracy"
             score={accuracyScore}

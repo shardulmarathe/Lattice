@@ -85,6 +85,25 @@ export function getSpeedScore(puzzle: Puzzle, timeSeconds: number): MeterScore {
 }
 
 /**
+ * Player-facing pace word, mapped 1:1 from the five speed-meter scores so the
+ * word and the dots can never disagree. Lower case because it sits in the
+ * meter's detail slot next to "optimal" and "clean", not as a heading.
+ */
+export type SpeedLabel = "blazing" | "fast" | "normal" | "slowish" | "slow";
+
+const SPEED_LABELS: Record<MeterScore, SpeedLabel> = {
+  5: "blazing",
+  4: "fast",
+  3: "normal",
+  2: "slowish",
+  1: "slow",
+};
+
+export function getSpeedLabel(puzzle: Puzzle, timeSeconds: number): SpeedLabel {
+  return SPEED_LABELS[getSpeedScore(puzzle, timeSeconds)];
+}
+
+/**
  * Accuracy meter, from mistake count (wrong-number collections + premature
  * flag hits):
  *   5: 0–1 · 4: 2–4 · 3: 5–6 · 2: 7–8 · 1: 9+
