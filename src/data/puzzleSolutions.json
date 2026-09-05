@@ -4315,5 +4315,57 @@
       "y": 4,
       "orientation": "/"
     }
+  ],
+  "83": [
+    {
+      "x": 0,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "orientation": "\\"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "orientation": "\\"
+    }
   ]
 }
