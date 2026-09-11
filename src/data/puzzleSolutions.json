@@ -4632,5 +4632,52 @@
       "y": 4,
       "orientation": "/"
     }
+  ],
+  "89": [
+    {
+      "x": 2,
+      "y": 0,
+      "orientation": "/"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "orientation": "\\"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "orientation": "\\"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "orientation": "/"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "orientation": "/"
+    },
+    {
+      "x": 7,
+      "y": 4,
+      "orientation": "\\"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "orientation": "\\"
+    },
+    {
+      "x": 7,
+      "y": 5,
+      "orientation": "/"
+    }
   ]
 }
