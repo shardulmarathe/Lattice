@@ -89,6 +89,7 @@ export const PUZZLE_SCHEDULE: Record<string, number> = {
   "2026-09-16": 87,
   "2026-09-17": 88,
   "2026-09-18": 89,
+  "2026-09-19": 90,
 };
 
 export function formatDateKey(date: Date): string {
