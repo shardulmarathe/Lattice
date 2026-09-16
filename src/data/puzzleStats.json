@@ -274,5 +274,8 @@
   },
   "93": {
     "minMirrors": 9
+  },
+  "94": {
+    "minMirrors": 9
   }
 }
